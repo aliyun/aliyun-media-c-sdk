@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "src/oss_media_define.h"
-#include "src/oss_media.h"
+#include "src/oss_media_server.h"
 #include "src/sts/libsts.h"
 #include "config.h"
 

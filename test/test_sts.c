@@ -1,8 +1,8 @@
 #include "CuTest.h"
 #include "test.h"
 #include "config.h"
-#include "src/oss_media.h"
-#include "src/oss_media_file.h"
+#include "src/oss_media_server.h"
+#include "src/oss_media_client.h"
 #include "src/sts/libsts.h"
 #include <oss_c_sdk/aos_define.h>
 #include <oss_c_sdk/aos_status.h>
@@ -117,6 +117,160 @@ void test_get_token_failed_with_expiration_more_than_1h(CuTest *tc) {
     oss_media_free_status(status);
 }
 
+void test_get_and_use_token_from_policy_succeeded(CuTest *tc) {
+    oss_media_token_t  *token = NULL;
+    // server get token and send to client
+    {
+        int ret;
+        char *policy = NULL;
+        oss_media_status_t *status = NULL;
+        oss_media_config_t config;
+    
+        policy = "{\n"
+                 "\"Statement\": [\n"
+                 "{"
+                 "\"Action\": \"oss:*\",\n"
+                 "\"Effect\": \"Allow\",\n"
+                 "\"Resource\": \"*\"\n"
+                 "}\n"
+                 "],\n"
+                 "\"Version\": \"1\"\n"
+                 "}\n";
+
+        init_media_config(&config);
+        status = oss_media_create_status();
+
+        token = (STSData*) malloc(sizeof(STSData));
+
+        ret = oss_media_get_token_from_policy(&config, policy,
+                15 * 60, token, status);
+
+        CuAssertIntEquals(tc, 0, ret);
+        CuAssertIntEquals(tc, 200, status->http_code);
+        CuAssertStrEquals(tc, "", status->error_code);
+        CuAssertStrEquals(tc, "", status->error_msg);
+
+        oss_media_free_status(status);
+
+        send_token_to_client(*token);
+    }
+
+    // client operation
+    {
+        int ret;
+        int64_t write_size = 0;
+        oss_media_file_t *file = NULL;
+        char *content = NULL;
+        oss_media_file_stat_t stat;
+
+        content = "hello oss media file\n";
+
+        // create file
+        file = oss_media_file_create();
+        file->auth = auth_func;
+
+        // open file
+        ret = oss_media_file_open(file, "w");
+        CuAssertIntEquals(tc, 0, ret);
+
+        // write file
+        write_size = oss_media_file_write(file, content, strlen(content));
+        CuAssertIntEquals(tc, write_size, strlen(content));
+
+        ret = oss_media_file_stat(file, &stat);
+        CuAssertIntEquals(tc, 0, ret);
+
+        CuAssertStrEquals(tc, "Normal", stat.type);
+        CuAssertIntEquals(tc, write_size, stat.length);
+        
+        delete_file(file);
+
+        // close file and free
+        clear_client_token();
+        free(token);
+        oss_media_file_close(file);
+        oss_media_file_free(file);
+    }
+}
+
+void test_get_and_use_token_from_policy_failed_with_policy_disallow(CuTest *tc) {
+    oss_media_token_t  *token = NULL;
+    // server get token and send to client
+    {
+        int ret;
+        char *policy = NULL;
+        oss_media_status_t *status = NULL;
+        oss_media_config_t config;
+    
+        policy = "{\n"
+                 "\"Statement\": [\n"
+                 "{"
+                 "\"Action\": \"oss:GetObject\",\n"
+                 "\"Effect\": \"Allow\",\n"
+                 "\"Resource\": \"*\"\n"
+                 "}\n"
+                 "],\n"
+                 "\"Version\": \"1\"\n"
+                 "}\n";
+        
+        init_media_config(&config);
+        status = oss_media_create_status();
+        
+        token = (STSData*) malloc(sizeof(STSData));
+
+        ret = oss_media_get_token_from_policy(&config, policy,
+                15 * 60, token, status);
+
+        printf ("%s", *status);        
+        CuAssertIntEquals(tc, 0, ret);
+        CuAssertIntEquals(tc, 200, status->http_code);
+        CuAssertStrEquals(tc, "", status->error_code);
+        CuAssertStrEquals(tc, "", status->error_msg);
+
+        oss_media_free_status(status);
+
+        send_token_to_client(*token);
+    }
+
+    // client operation
+    {
+        int ret;
+        int64_t write_size = 0;
+        oss_media_file_t *file = NULL;
+        char *content = NULL;
+        oss_media_file_stat_t stat;
+
+        content = "hello oss media file\n";
+
+        // create file
+        file = oss_media_file_create();
+        file->auth = auth_func;
+
+        // open file
+        ret = oss_media_file_open(file, "w");
+        CuAssertIntEquals(tc, 0, ret);
+
+        //write file
+        write_size = oss_media_file_write(file, content, strlen(content));
+        CuAssertIntEquals(tc, -1, write_size);
+
+        sleep(1);
+        ret = oss_media_file_stat(file, &stat);
+        CuAssertIntEquals(tc, 0, ret);
+
+        CuAssertStrEquals(tc, "unknown", stat.type);
+        CuAssertIntEquals(tc, 0, stat.length);
+        
+        delete_file(file);
+
+        // close file and free
+        clear_client_token();
+        free(token);
+        oss_media_file_close(file);
+        oss_media_file_free(file);
+    }
+}
+
 static void auth_func(oss_media_file_t *file) {
     file->host = TEST_OSS_HOST;
     file->is_oss_domain = 1; //oss host type, host is oss domain ? 1 : 0(cname etc)
@@ -214,6 +368,8 @@ CuSuite *test_sts()
     SUITE_ADD_TEST(suite, test_get_and_use_token_succeeded);
     SUITE_ADD_TEST(suite, test_get_token_failed_with_expiration_less_than_15m);
     SUITE_ADD_TEST(suite, test_get_token_failed_with_expiration_more_than_1h);
-
+    SUITE_ADD_TEST(suite, test_get_and_use_token_from_policy_succeeded);
+    SUITE_ADD_TEST(suite, test_get_and_use_token_from_policy_failed_with_policy_disallow);
+    
     return suite;
 }

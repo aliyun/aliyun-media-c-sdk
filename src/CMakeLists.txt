@@ -1,7 +1,8 @@
 IF (NOT ONLY_BUILD_SERVER)
    set(CLIENT_SRC oss_media_define.c 
    	       oss_media_log.c
-	       oss_media_file.c
+	       oss_media_client.c
+	       oss_media_mpegts.c
 	       )
 
    add_library(${CMAKE_PROJECT_NAME}_client SHARED ${CLIENT_SRC})
@@ -13,14 +14,14 @@ IF (NOT ONLY_BUILD_SERVER)
    INSTALL(TARGETS ${CMAKE_PROJECT_NAME}_client_static ARCHIVE DESTINATION lib)
 
    INSTALL(FILES oss_media_define.h
-   		 oss_media_file.h
+   		 oss_media_client.h
 		 DESTINATION include/oss_c_media_sdk)
 ENDIF()
 
 IF (NOT ONLY_BUILD_CLIENT)
    set(SERVER_SRC oss_media_define.c
 	       oss_media_log.c
-	       oss_media.c
+	       oss_media_server.c
 	       sts/token.c
 	       sts/general.c
 	       sts/util.c
@@ -39,7 +40,7 @@ IF (NOT ONLY_BUILD_CLIENT)
 
    INSTALL(FILES
      oss_media_define.h
-     oss_media.h
+     oss_media_server.h
      DESTINATION include/oss_c_media_sdk)
 
    INSTALL(FILES

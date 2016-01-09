@@ -1,7 +1,7 @@
 #include "CuTest.h"
 #include "test.h"
 #include "config.h"
-#include "src/oss_media.h"
+#include "src/oss_media_server.h"
 #include <oss_c_sdk/aos_define.h>
 #include <oss_c_sdk/aos_status.h>
 
