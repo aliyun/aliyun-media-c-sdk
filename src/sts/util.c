@@ -105,11 +105,11 @@ int urlEncode(char *dest, const char *src, int maxSrcSize)
     int len = 0;
     
     if (src) {
-        while (*src) {
-            if (++len > maxSrcSize) {
-                *dest = 0;
-                return 0;
-            }
+        while (++len <= maxSrcSize && *src) {
+            // if (++len > maxSrcSize) {
+            //     *dest = 0;
+            //     return 0;
+            // }
             unsigned char c = *src;
             if (isalnum(c) ||
                     (c == '-') || (c == '_') || (c == '.') || (c == '!') ||
