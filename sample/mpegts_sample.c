@@ -58,7 +58,6 @@ static void do_write(oss_media_mpegts_context_t *ctx) {
         if (last_pos != -1 && cur_pos > last_pos) {
             frame.pts += 33 * 90;
             frame.dts = frame.pts;
-            frame.cc ++;
 
             buf.pos = last_pos;
             buf.last = cur_pos;
