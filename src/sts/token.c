@@ -352,19 +352,25 @@ STSStatus STS_assume_role(const char* roleArn, const char* roleSessionName,
                 break;
                 
             case STSStatusNameLookupError:
-                snprintf(errorMessage, 256, "%s %s.", "Failed to lookup STS server:", STS_DEFAULT_HOSTNAME);
+                snprintf(errorMessage, 256, "%s %s.", 
+                        "Failed to lookup STS server:", 
+                        commonContext.hostname);
                 break;
                 
             case STSStatusFailedToConnect:
-                snprintf(errorMessage, 256, "%s %s.", "Failed to connect to STS server:", STS_DEFAULT_HOSTNAME);
+                snprintf(errorMessage, 256, "%s %s.", 
+                        "Failed to connect to STS server:", 
+                        commonContext.hostname);
                 break;
                 
             case STSStatusConnectionFailed:
-                snprintf(errorMessage, 256, "%s.", "Write Error or Operation Timeout");
+                snprintf(errorMessage, 256, "%s.", 
+                        "Write Error or Operation Timeout");
                 break;
                 
             case STSStatusServerFailedVerification:
-                snprintf(errorMessage, 256, "%s.", "SSL verification failed");
+                snprintf(errorMessage, 256, "%s.", 
+                        "SSL verification failed");
                 break;
                 
             case STSStatusInternalError:
