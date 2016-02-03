@@ -383,7 +383,6 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
             header_size = 5;
             flags = 0x80;                   // pts
             if (frame->stream_type == st_h264) {
-                //if (frame->dts != frame->pts) {
                 header_size += 5;
                 flags |= 0x40;              // dts
             }
@@ -403,11 +402,10 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
                     frame->pts + file->options.hls_delay_ms); 
 
             if (frame->stream_type == st_h264) {
-                //if (frame->dts != frame->pts) {
                 p = oss_media_ts_write_pts(p, 1, 
                         frame->dts + file->options.hls_delay_ms); 
             }
-
+            
             first = 0;
         }
 
