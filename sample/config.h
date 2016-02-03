@@ -5,7 +5,7 @@
 
 OSS_MEDIA_CPP_START
 
-extern char SAMPLE_OSS_HOST[];
+extern char SAMPLE_OSS_ENDPOINT[];
 extern char SAMPLE_ACCESS_KEY_ID[];
 extern char SAMPLE_ACCESS_KEY_SECRET[];
 extern char SAMPLE_STS_TOKEN[];

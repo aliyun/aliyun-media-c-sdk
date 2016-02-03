@@ -2,7 +2,7 @@ IF (NOT ONLY_BUILD_SERVER)
    set(CLIENT_SRC oss_media_define.c 
    	       oss_media_log.c
 	       oss_media_client.c
-	       oss_media_mpegts.c
+	       oss_media_ts.c
 	       )
 
    add_library(${CMAKE_PROJECT_NAME}_client SHARED ${CLIENT_SRC})

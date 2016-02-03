@@ -6,45 +6,28 @@ extern void oss_op_debug(char *op,
                          aos_table_t *req_headers, 
                          aos_table_t *resp_headers);
 
-extern void oss_op_error(char *op, aos_status_t *status);
-
-
 static void oss_media_init_request_opts(aos_pool_t *pool, 
-                                        oss_media_config_t *config, 
+                                        const oss_media_config_t *config, 
                                         oss_request_options_t **options) 
 {
     oss_request_options_t *opts = NULL;
 
     opts = oss_request_options_create(pool);
     opts->config = oss_config_create(pool);
-    aos_str_set(&opts->config->host, config->host);
-    aos_str_set(&opts->config->id, config->access_key_id);
-    aos_str_set(&opts->config->key, config->access_key_secret);
-    opts->config->is_oss_domain = config->is_oss_domain;
+    aos_str_set(&opts->config->endpoint, config->endpoint);
+    aos_str_set(&opts->config->access_key_id, config->access_key_id);
+    aos_str_set(&opts->config->access_key_secret, config->access_key_secret);
+    opts->config->is_cname = config->is_cname;
     opts->ctl = aos_http_controller_create(pool, 0);
 
     *options = opts;
 }
 
-static void oss_media_set_http_code_message(oss_media_status_t *status, 
-                                            aos_status_t *request_status) 
+int oss_media_init(aos_log_level_e log_level) 
 {
-    if (!status)
-        return;
-
-    status->http_code = request_status->code;
-    if (!aos_status_is_ok(request_status)) {
-        status->request_id = apr_pstrdup(status->_pool, request_status->req_id);
-        status->error_code = apr_pstrdup(status->_pool, request_status->error_code);
-        status->error_msg = apr_pstrdup(status->_pool, request_status->error_msg);
-    }
-}
-
-int oss_media_init() 
-{
-    aos_log_set_level(AOS_LOG_INFO);
+    aos_log_set_level(log_level);
     aos_log_set_output(NULL);
-    return aos_http_io_initialize(OSS_MEDIA_USER_AGENT, 0);
+    return aos_http_io_initialize(0);
 }
 
 void oss_media_destroy() 
@@ -78,26 +61,6 @@ void oss_media_free_files(oss_media_files_t *files)
     files = NULL;
 }
 
-oss_media_status_t *oss_media_create_status()
-{
-    aos_pool_t *pool = NULL;
-    oss_media_status_t *status = NULL;
-
-    aos_pool_create(&pool, NULL);
-    status = (oss_media_status_t *) aos_pcalloc(pool, sizeof(oss_media_status_t));
-    status->_pool = pool;
-    status->request_id = "";
-    status->error_code = "";
-    status->error_msg = "";
-
-    return status;
-}
-
-void oss_media_free_status(oss_media_status_t *status)
-{
-    aos_pool_destroy(status->_pool);
-}
-
 oss_media_lifecycle_rules_t *oss_media_create_lifecycle_rules(int size)
 {
     aos_pool_t *pool = NULL;
@@ -121,26 +84,27 @@ void oss_media_free_lifecycle_rules(oss_media_lifecycle_rules_t *rules)
     aos_pool_destroy(rules->_pool);
 }
 
-int oss_media_create_bucket(oss_media_config_t *config,
+int oss_media_create_bucket(const oss_media_config_t *config,
                             const char *bucket_name,
-                            oss_media_acl_t acl,
-                            oss_media_status_t *status)
+                            oss_media_acl_t acl)
 {
     aos_pool_t *pool = NULL;
     oss_request_options_t *opts = NULL;
     aos_string_t bucket;
-    aos_status_t *request_status = NULL;
+    aos_status_t *status = NULL;
     aos_table_t *resp_headers = NULL;
 
     aos_pool_create(&pool, NULL);
     oss_media_init_request_opts(pool, config, &opts);
     aos_str_set(&bucket, bucket_name);
 
-    request_status = oss_create_bucket(opts, &bucket, acl, &resp_headers);
-    oss_media_set_http_code_message(status, request_status);
+    status = oss_create_bucket(opts, &bucket, acl, &resp_headers);
 
-    if (!aos_status_is_ok(request_status)) {
-        oss_op_error("oss_media_create_bucket", request_status);
+    if (!aos_status_is_ok(status)) {
+        aos_error_log("create bucket failed. request_id:%s, code:%d, "
+                      "error_code:%d, error_message:%s",
+                      status->req_id, status->code, status->error_code,
+                      status->error_msg);
         aos_pool_destroy(pool);
         return -1;
     }
@@ -149,14 +113,13 @@ int oss_media_create_bucket(oss_media_config_t *config,
     return 0;
 }
 
-int oss_media_delete_bucket(oss_media_config_t *config, 
-                            const char *bucket_name, 
-                            oss_media_status_t *status) 
+int oss_media_delete_bucket(const oss_media_config_t *config, 
+                            const char *bucket_name) 
 {
     aos_pool_t *pool = NULL;
     oss_request_options_t *options = NULL;
     aos_string_t bucket;
-    aos_status_t *request_status = NULL;
+    aos_status_t *status = NULL;
     aos_table_t *resp_headers = NULL;
 
     aos_pool_create(&pool, NULL);
@@ -164,11 +127,13 @@ int oss_media_delete_bucket(oss_media_config_t *config,
     oss_media_init_request_opts(pool, config, &options);
     aos_str_set(&bucket, bucket_name);
 
-    request_status = oss_delete_bucket(options, &bucket, &resp_headers);
-    oss_media_set_http_code_message(status, request_status);
+    status = oss_delete_bucket(options, &bucket, &resp_headers);
 
-    if (!aos_status_is_ok(request_status)) {
-        oss_op_error("oss_media_delete_bucket", request_status);
+    if (!aos_status_is_ok(status)) {
+        aos_error_log("delete bucket failed. request_id:%s, code:%d, "
+                      "error_code:%d, error_message:%s",
+                      status->req_id, status->code, status->error_code,
+                      status->error_msg);
         aos_pool_destroy(pool);
         return -1;
     }
@@ -177,15 +142,14 @@ int oss_media_delete_bucket(oss_media_config_t *config,
     return 0;
 }
 
-int oss_media_create_bucket_lifecycle(oss_media_config_t *config, 
+int oss_media_create_bucket_lifecycle(const oss_media_config_t *config, 
                                       const char *bucket_name, 
-                                      oss_media_lifecycle_rules_t *rules, 
-                                      oss_media_status_t *status) 
+                                      oss_media_lifecycle_rules_t *rules) 
 {
     aos_pool_t *pool = NULL;
     oss_request_options_t *opts = NULL;
     aos_string_t bucket;
-    aos_status_t *request_status = NULL;
+    aos_status_t *status = NULL;
     aos_table_t *resp_headers = NULL;
     aos_list_t rule_list;
     oss_lifecycle_rule_content_t *rule_content = NULL;
@@ -207,15 +171,15 @@ int oss_media_create_bucket_lifecycle(oss_media_config_t *config,
         aos_list_add_tail(&rule_content->node, &rule_list);
     }
 
-    request_status = oss_put_bucket_lifecycle(opts, &bucket, 
-            &rule_list, &resp_headers);
+    status = oss_put_bucket_lifecycle(opts, &bucket, &rule_list, &resp_headers);
 
-    oss_op_debug("oss_put_bucket_lifecycle", request_status, NULL, resp_headers);
+    oss_op_debug("oss_put_bucket_lifecycle", status, NULL, resp_headers);
 
-    oss_media_set_http_code_message(status, request_status);
-
-    if (!aos_status_is_ok(request_status)) {
-        oss_op_error("oss_media_create_lifecycle_rules", request_status);
+    if (!aos_status_is_ok(status)) {
+        aos_error_log("create bucket lifecycle failed. request_id:%s, code:%d, "
+                      "error_code:%d, error_message:%s",
+                      status->req_id, status->code, status->error_code,
+                      status->error_msg);
         aos_pool_destroy(pool);
         return -1;
     }
@@ -224,15 +188,14 @@ int oss_media_create_bucket_lifecycle(oss_media_config_t *config,
     return 0;
 }
 
-int oss_media_get_bucket_lifecycle(oss_media_config_t *config, 
+int oss_media_get_bucket_lifecycle(const oss_media_config_t *config, 
                                    const char *bucket_name, 
-                                   oss_media_lifecycle_rules_t *rules, 
-                                   oss_media_status_t *status) 
+                                   oss_media_lifecycle_rules_t *rules) 
 {
     aos_pool_t *pool = NULL;
     oss_request_options_t *opts = NULL;
     aos_string_t bucket;
-    aos_status_t *request_status = NULL;
+    aos_status_t *status = NULL;
     aos_table_t *resp_headers = NULL;
     aos_list_t rule_list;
     oss_lifecycle_rule_content_t *rule_content = NULL;
@@ -244,15 +207,16 @@ int oss_media_get_bucket_lifecycle(oss_media_config_t *config,
     aos_str_set(&bucket, bucket_name);
     aos_list_init(&rule_list);
     
-    request_status = oss_get_bucket_lifecycle(opts, &bucket, 
+    status = oss_get_bucket_lifecycle(opts, &bucket, 
             &rule_list, &resp_headers);
 
-    oss_op_debug("oss_get_bucket_lifecycle", request_status, NULL, resp_headers);
+    oss_op_debug("oss_get_bucket_lifecycle", status, NULL, resp_headers);
 
-    oss_media_set_http_code_message(status, request_status);
-
-    if (!aos_status_is_ok(request_status)) {
-        oss_op_error("oss_media_get_bucket_lifecycle", request_status);
+    if (!aos_status_is_ok(status)) {
+        aos_error_log("get bucket lifecycle failed. request_id:%s, code:%d, "
+                      "error_code:%d, error_message:%s",
+                      status->req_id, status->code, status->error_code,
+                      status->error_msg);
         aos_pool_destroy(pool);
         return -1;
     }
@@ -281,14 +245,13 @@ int oss_media_get_bucket_lifecycle(oss_media_config_t *config,
     return 0;
 }
 
-int oss_media_delete_bucket_lifecycle(oss_media_config_t *config, 
-                                      const char *bucket_name, 
-                                      oss_media_status_t *status)
+int oss_media_delete_bucket_lifecycle(const oss_media_config_t *config, 
+                                      const char *bucket_name)
 {
     aos_pool_t *pool = NULL;
     oss_request_options_t *opts = NULL;
     aos_string_t bucket;
-    aos_status_t *request_status = NULL;
+    aos_status_t *status = NULL;
     aos_table_t *resp_headers = NULL;
 
     aos_pool_create(&pool, NULL);
@@ -296,14 +259,15 @@ int oss_media_delete_bucket_lifecycle(oss_media_config_t *config,
     oss_media_init_request_opts(pool, config, &opts);
     aos_str_set(&bucket, bucket_name);
 
-    request_status = oss_delete_bucket_lifecycle(opts, &bucket, &resp_headers);
+    status = oss_delete_bucket_lifecycle(opts, &bucket, &resp_headers);
 
-    oss_op_debug("oss_delete_bucket_lifecycle", request_status, NULL, resp_headers);
+    oss_op_debug("oss_delete_bucket_lifecycle", status, NULL, resp_headers);
 
-    oss_media_set_http_code_message(status, request_status);
-
-    if (!aos_status_is_ok(request_status)) {
-        oss_op_error("oss_media_delete_bucket_lifecycle", request_status);
+    if (!aos_status_is_ok(status)) {
+        aos_error_log("delete bucket lifecycle failed. request_id:%s, code:%d, "
+                      "error_code:%d, error_message:%s",
+                      status->req_id, status->code, status->error_code,
+                      status->error_msg);
         aos_pool_destroy(pool);
         return -1;
     }
@@ -312,16 +276,15 @@ int oss_media_delete_bucket_lifecycle(oss_media_config_t *config,
     return 0;
 }
 
-int oss_media_delete_file(oss_media_config_t *config, 
+int oss_media_delete_file(const oss_media_config_t *config, 
                           const char *bucket_name, 
-                          const char *key, 
-                          oss_media_status_t *status)
+                          const char *key)
 {
     aos_pool_t *pool = NULL;
     oss_request_options_t *opts = NULL;
     aos_string_t bucket;
     aos_string_t object;
-    aos_status_t *request_status = NULL;
+    aos_status_t *status = NULL;
     aos_table_t *resp_headers = NULL;
 
     aos_pool_create(&pool, NULL);
@@ -330,12 +293,13 @@ int oss_media_delete_file(oss_media_config_t *config,
     aos_str_set(&bucket, bucket_name);
     aos_str_set(&object, key);
 
-    request_status = oss_delete_object(opts, &bucket, &object, &resp_headers);
+    status = oss_delete_object(opts, &bucket, &object, &resp_headers);
 
-    oss_media_set_http_code_message(status, request_status);
-
-    if (!aos_status_is_ok(request_status)) {
-        oss_op_error("oss_media_delete_file", request_status);
+    if (!aos_status_is_ok(status)) {
+        aos_error_log("delete file failed. request_id:%s, code:%d, "
+                      "error_code:%d, error_message:%s",
+                      status->req_id, status->code, status->error_code,
+                      status->error_msg);
         aos_pool_destroy(pool);
         return -1;
     }
@@ -344,15 +308,14 @@ int oss_media_delete_file(oss_media_config_t *config,
     return 0;
 }
 
-int oss_media_list_files(oss_media_config_t *config, 
+int oss_media_list_files(const oss_media_config_t *config, 
                          const char *bucket_name, 
-                         oss_media_files_t *files, 
-                         oss_media_status_t *status) 
+                         oss_media_files_t *files) 
 {
     aos_pool_t *pool = NULL;
     oss_request_options_t *opts = NULL;
     aos_string_t bucket;
-    aos_status_t *request_status = NULL;
+    aos_status_t *status = NULL;
     oss_list_object_params_t *params = NULL;
     aos_table_t *resp_headers = NULL;
     int i;
@@ -373,11 +336,13 @@ int oss_media_list_files(oss_media_config_t *config,
     if (files->marker)
         aos_str_set(&params->marker, files->marker);
 
-    request_status = oss_list_object(opts, &bucket, params, &resp_headers);
-    oss_media_set_http_code_message(status, request_status);
+    status = oss_list_object(opts, &bucket, params, &resp_headers);
 
-    if (!aos_status_is_ok(request_status)) {
-        oss_op_error("oss_media_list_files", request_status);
+    if (!aos_status_is_ok(status)) {
+        aos_error_log("list files failed. request_id:%s, code:%d, "
+                      "error_code:%d, error_message:%s",
+                      status->req_id, status->code, status->error_code,
+                      status->error_msg);
         aos_pool_destroy(pool);
         return -1;
     }
@@ -397,13 +362,12 @@ int oss_media_list_files(oss_media_config_t *config,
     return 0;
 }
 
-int oss_media_get_token(oss_media_config_t *config, 
+int oss_media_get_token(const oss_media_config_t *config, 
                         const char *bucket_name, 
                         const char *path, 
                         const char *mode, 
                         int64_t expiration, 
-                        oss_media_token_t *token, 
-                        oss_media_status_t *status) 
+                        oss_media_token_t *token) 
 {
     char policy[1024];
     char *policy_template = NULL;
@@ -424,14 +388,13 @@ int oss_media_get_token(oss_media_config_t *config,
     sprintf(policy, policy_template, h, r, w, a, bucket_name, path);
 
     return oss_media_get_token_from_policy(config, 
-            policy, expiration, token, status);
+            policy, expiration, token);
 }
 
-int oss_media_get_token_from_policy(oss_media_config_t *config, 
+int oss_media_get_token_from_policy(const oss_media_config_t *config, 
                                     const char *policy, 
                                     int64_t expiration,
-                                    oss_media_token_t *token, 
-                                    oss_media_status_t *status) 
+                                    oss_media_token_t *token) 
 {
     char errorMessage[1024];
     int sts_status;
@@ -439,22 +402,13 @@ int oss_media_get_token_from_policy(oss_media_config_t *config,
     sts_status = STS_assume_role(config->role_arn, OSS_MEDIA_USER_AGENT, 
                                  policy, expiration, config->access_key_id, 
                                  config->access_key_secret, token, errorMessage);
-
-    aos_debug_log("get token. [role_arn:%s, policy=%s, status=%d\n]", 
-                  config->role_arn, policy, sts_status);
-
-    if (STSStatusOK == sts_status) {
-        if (status) {
-            status->http_code = OSS_MEDIA_OK;
-        }
-        return 0;
-    } else {
-        if (status) {
-            const char *sts_error_code = "GetSTSTokenError";
-            status->http_code = OSS_MEDIA_INTERNAL_ERROR_CODE;
-            status->error_code = apr_pstrdup(status->_pool, sts_error_code);
-            status->error_msg = apr_pstrdup(status->_pool, errorMessage);
-        }
+    
+    if (STSStatusOK != sts_status) {
+        aos_error_log("get token failed. [role_arn:%s, policy:%s, status:%d, "
+                      "error message:%s]", config->role_arn, policy, sts_status,
+                      errorMessage);
         return -1;
     }
+    
+    return 0;
 }

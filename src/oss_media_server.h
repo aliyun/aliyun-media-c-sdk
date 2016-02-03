@@ -14,23 +14,12 @@ OSS_MEDIA_CPP_START
  *  this struct describes the oss media configuration.
  */
 typedef struct oss_media_config_s {
-    char *host;              // oss host
-    int is_oss_domain;       // oss host type, host is oss domain ? 1 : 0(cname etc) 
-    char *access_key_id;     // oss access key id
-    char *access_key_secret; // oss access key secret
-    char *role_arn;          // role arn
+    char *endpoint;
+    int8_t is_cname;
+    char *access_key_id;
+    char *access_key_secret;
+    char *role_arn;
 } oss_media_config_t;
-
-/**
- *  this struct describes the status of function call.
- */
-typedef struct oss_media_status_s {
-    char *request_id;
-    int http_code;      // oss http status code
-    char *error_code;   // oss http error code
-    char *error_msg;    // oss http error message
-    aos_pool_t *_pool;
-} oss_media_status_t;
 
 /**
  * oss bucket acl
@@ -87,23 +76,13 @@ typedef struct STSData oss_media_token_t;
  *  @brief  oss media init
  *  @note    this function should be called at first in application
  */
-int oss_media_init();
+int oss_media_init(aos_log_level_e log_level);
 
 /*
  *  @brief  oss media destroy
  *  @note   this function should be called at last in application
  */
 void oss_media_destroy();
-
-/*
- *  @brief  oss_media_create_status
- */
-oss_media_status_t *oss_media_create_status();
-
-/*
- *  @brief  oss_media_free_status
- */
-void oss_media_free_status(oss_media_status_t *status);
 
 /**
  *  @brief  create the data struct of oss_media_files_t
@@ -118,7 +97,7 @@ void oss_media_free_files(oss_media_files_t *files);
 /**
  *  @brief  create the data struct of oss_media_lifecycle_rules_t
  */
-oss_media_lifecycle_rules_t *oss_media_create_lifecycle_rules(int size);
+oss_media_lifecycle_rules_t* oss_media_create_lifecycle_rules(int size);
 
 /**
  *  @brief  free the data struct of oss_media_lifecycle_rules_t
@@ -132,10 +111,9 @@ void oss_media_free_lifecycle_rules(oss_media_lifecycle_rules_t *rules);
  *      upon sucessful 0 is returned.
  *      otherwise, -1 is returned and code/message in data status is set to indicate the error.
  */
-int oss_media_create_bucket(oss_media_config_t *config, 
+int oss_media_create_bucket(const oss_media_config_t *config, 
                             const char *bucket_name, 
-                            oss_media_acl_t acl, 
-                            oss_media_status_t *status);
+                            oss_media_acl_t acl);
 
 /*
  *  @brief  delete oss bucket. this function deletes the oss bucket.
@@ -143,9 +121,8 @@ int oss_media_create_bucket(oss_media_config_t *config,
  *      upon successful 0 is returned.
  *      otherwise, -1 is returned and code/message in struct status is set to indicate the error.
  */
-int oss_media_delete_bucket(oss_media_config_t *config, 
-                            const char *bucket_name, 
-                            oss_media_status_t *status);
+int oss_media_delete_bucket(const oss_media_config_t *config, 
+                            const char *bucket_name);
 
 /**
  *  @brief  create bucket lifecycle. this function creates the bucket lifecycle.
@@ -154,10 +131,9 @@ int oss_media_delete_bucket(oss_media_config_t *config,
  *      upon successful 0 is returned.
  *      otherwise, -1 is returned and code/message in struct status is set to indicate the error.
  */
-int oss_media_create_bucket_lifecycle(oss_media_config_t *config, 
+int oss_media_create_bucket_lifecycle(const oss_media_config_t *config, 
                                       const char *bucket_name, 
-                                      oss_media_lifecycle_rules_t *rules, 
-                                      oss_media_status_t *status);
+                                      oss_media_lifecycle_rules_t *rules);
 
 /**
  *  @brief  get bucket lifecycle. this function obtains the bucket lifecycle.
@@ -165,10 +141,9 @@ int oss_media_create_bucket_lifecycle(oss_media_config_t *config,
  *      upon successful 0 is returned.
  *      otherwise, -1 is returned and code/message in struct status is set to indicate the error.
  */
-int oss_media_get_bucket_lifecycle(oss_media_config_t *config, 
+int oss_media_get_bucket_lifecycle(const oss_media_config_t *config, 
                                    const char *bucket_name, 
-                                   oss_media_lifecycle_rules_t *rules, 
-                                   oss_media_status_t *status);
+                                   oss_media_lifecycle_rules_t *rules);
 
 /**
  *  @brief  delete bucket lifecycle. this function delete all lifecycles for the bucket.
@@ -176,9 +151,8 @@ int oss_media_get_bucket_lifecycle(oss_media_config_t *config,
  *      upon successful 0 is returned.
  *      otherwise, -1 is returned and code/message in struct status is set to indicate the error.
  */
-int oss_media_delete_bucket_lifecycle(oss_media_config_t *config, 
-                                      const char *bucket_name, 
-                                      oss_media_status_t *status);
+int oss_media_delete_bucket_lifecycle(const oss_media_config_t *config, 
+                                      const char *bucket_name);
 
 /**
  *  @brief  delete oss file. this function delete the oss file.
@@ -186,10 +160,9 @@ int oss_media_delete_bucket_lifecycle(oss_media_config_t *config,
  *      upon successful 0 is returned.
  *      otherwise, -1 is returned and code/message in struct status is set to indicate the error.
  */
-int oss_media_delete_file(oss_media_config_t *config, 
+int oss_media_delete_file(const oss_media_config_t *config, 
                           const char *bucket_name, 
-                          const char *key, 
-                          oss_media_status_t *status);
+                          const char *object_key);
 
 /**
  *  @brief  list oss files. this function obtains the oss files.
@@ -197,10 +170,9 @@ int oss_media_delete_file(oss_media_config_t *config,
  *      upon successful 0 is returned.
  *      otherwise, -1 is returned and code/message in struct status is set to indicate the error.
  */
-int oss_media_list_files(oss_media_config_t *config, 
+int oss_media_list_files(const oss_media_config_t *config, 
                          const char *bucket_name, 
-                         oss_media_files_t *files, 
-                         oss_media_status_t *status);
+                         oss_media_files_t *files);
 
 /*
  *  @brief  get sts token. this function obtains the access token.
@@ -215,13 +187,12 @@ int oss_media_list_files(oss_media_config_t *config,
  *      upon successful 0 is returned.
  *      otherwise, -1 is returned and code/message in struct status is set to indicate the error.
  */
-int oss_media_get_token(oss_media_config_t *config, 
+int oss_media_get_token(const oss_media_config_t *config, 
                         const char *bucket_name, 
                         const char *path, 
                         const char *mode, 
                         int64_t expiration,
-                        oss_media_token_t *token, 
-                        oss_media_status_t *status);
+                        oss_media_token_t *token);
 
 /**
  *  @brief  get token from policy. this function obtains the access token, with sts policy.
@@ -231,11 +202,10 @@ int oss_media_get_token(oss_media_config_t *config,
  *      upon successful 0 is returned.
  *      otherwise, -1 is returned and code/message in struct status is set to indicate the error.
  */
-int oss_media_get_token_from_policy(oss_media_config_t *config, 
+int oss_media_get_token_from_policy(const oss_media_config_t *config, 
                                     const char *policy, 
                                     int64_t expiration,
-                                    oss_media_token_t *token, 
-                                    oss_media_status_t *status);
+                                    oss_media_token_t *token);
 
 OSS_MEDIA_CPP_END
 #endif

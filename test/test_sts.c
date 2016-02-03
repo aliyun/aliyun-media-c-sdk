@@ -9,7 +9,7 @@
 
 static void init_media_config(oss_media_config_t *config);
 static int64_t write_file(const char* key, oss_media_config_t *config);
-static aos_status_t* delete_file(oss_media_file_t *file);
+static void* delete_file(oss_media_file_t *file);
 static void send_token_to_client(oss_media_token_t token);
 static void clear_client_token();
 static void auth_func(oss_media_file_t *file);
@@ -22,22 +22,15 @@ void test_get_and_use_token_succeeded(CuTest *tc) {
     // server get token and send to client
     {
         int ret;
-        oss_media_status_t *status;
         oss_media_token_t token;
         oss_media_config_t config;
     
         init_media_config(&config);
-        status = oss_media_create_status();
 
         ret = oss_media_get_token(&config, TEST_BUCKET_NAME, "/*", "rwa",
-                15 * 60, &token, status);
+                15 * 60, &token);
 
         CuAssertIntEquals(tc, 0, ret);
-        CuAssertIntEquals(tc, 200, status->http_code);
-        CuAssertStrEquals(tc, "", status->error_code);
-        CuAssertStrEquals(tc, "", status->error_msg);
-
-        oss_media_free_status(status);
 
         send_token_to_client(token);
     }
@@ -52,17 +45,13 @@ void test_get_and_use_token_succeeded(CuTest *tc) {
 
         content = "hello oss media file\n";
 
-        // create file
-        file = oss_media_file_create();
-        file->auth = auth_func;
-
         // open file
-        ret = oss_media_file_open(file, "w");
-        CuAssertIntEquals(tc, 0, ret);
+        file = oss_media_file_open("w", auth_func);
+        CuAssertTrue(tc, NULL != file);
 
         // write file
         write_size = oss_media_file_write(file, content, strlen(content));
-        CuAssertIntEquals(tc, write_size, strlen(content));
+        CuAssertIntEquals(tc, strlen(content), write_size);
 
         ret = oss_media_file_stat(file, &stat);
         CuAssertIntEquals(tc, 0, ret);
@@ -72,49 +61,36 @@ void test_get_and_use_token_succeeded(CuTest *tc) {
         
         delete_file(file);
 
-        // close file and free
+        // close file
         clear_client_token();
         oss_media_file_close(file);
-        oss_media_file_free(file);
     }
 }
 
 void test_get_token_failed_with_expiration_less_than_15m(CuTest *tc) {
     int ret;
-    oss_media_status_t *status;
     oss_media_token_t  token;
     oss_media_config_t config;
     
     init_media_config(&config);
-    status = oss_media_create_status();
 
     ret = oss_media_get_token(&config, TEST_BUCKET_NAME, "/*", "rwa",
-                              15 * 60 - 1, &token, status);
+                              15 * 60 - 1, &token);
 
     CuAssertIntEquals(tc, -1, ret);
-    CuAssertIntEquals(tc, 500, status->http_code);
-    CuAssertStrEquals(tc, "GetSTSTokenError", status->error_code);
-
-    oss_media_free_status(status);
 }
 
 void test_get_token_failed_with_expiration_more_than_1h(CuTest *tc) {
     int ret;
-    oss_media_status_t *status;
     oss_media_token_t  token;
     oss_media_config_t config;
     
     init_media_config(&config);
-    status = oss_media_create_status();
 
     ret = oss_media_get_token(&config, TEST_BUCKET_NAME, "/*", "rwa",
-                              60 * 60 + 1, &token, status);
+                              60 * 60 + 1, &token);
 
     CuAssertIntEquals(tc, -1, ret);
-    CuAssertIntEquals(tc, 500, status->http_code);
-    CuAssertStrEquals(tc, "GetSTSTokenError", status->error_code);
-
-    oss_media_free_status(status);
 }
 
 void test_get_and_use_token_from_policy_succeeded(CuTest *tc) {
@@ -123,7 +99,6 @@ void test_get_and_use_token_from_policy_succeeded(CuTest *tc) {
     {
         int ret;
         char *policy = NULL;
-        oss_media_status_t *status = NULL;
         oss_media_config_t config;
     
         policy = "{\n"
@@ -138,19 +113,13 @@ void test_get_and_use_token_from_policy_succeeded(CuTest *tc) {
                  "}\n";
 
         init_media_config(&config);
-        status = oss_media_create_status();
 
         token = (STSData*) malloc(sizeof(STSData));
 
         ret = oss_media_get_token_from_policy(&config, policy,
-                15 * 60, token, status);
+                15 * 60, token);
 
         CuAssertIntEquals(tc, 0, ret);
-        CuAssertIntEquals(tc, 200, status->http_code);
-        CuAssertStrEquals(tc, "", status->error_code);
-        CuAssertStrEquals(tc, "", status->error_msg);
-
-        oss_media_free_status(status);
 
         send_token_to_client(*token);
     }
@@ -165,17 +134,13 @@ void test_get_and_use_token_from_policy_succeeded(CuTest *tc) {
 
         content = "hello oss media file\n";
 
-        // create file
-        file = oss_media_file_create();
-        file->auth = auth_func;
-
         // open file
-        ret = oss_media_file_open(file, "w");
-        CuAssertIntEquals(tc, 0, ret);
+        file = oss_media_file_open("w", auth_func);
+        CuAssertTrue(tc, NULL != file);
 
         // write file
         write_size = oss_media_file_write(file, content, strlen(content));
-        CuAssertIntEquals(tc, write_size, strlen(content));
+        CuAssertIntEquals(tc, strlen(content), write_size);
 
         ret = oss_media_file_stat(file, &stat);
         CuAssertIntEquals(tc, 0, ret);
@@ -185,11 +150,10 @@ void test_get_and_use_token_from_policy_succeeded(CuTest *tc) {
         
         delete_file(file);
 
-        // close file and free
+        // close file
         clear_client_token();
         free(token);
         oss_media_file_close(file);
-        oss_media_file_free(file);
     }
 }
 
@@ -199,7 +163,6 @@ void test_get_and_use_token_from_policy_failed_with_policy_disallow(CuTest *tc) 
     {
         int ret;
         char *policy = NULL;
-        oss_media_status_t *status = NULL;
         oss_media_config_t config;
     
         policy = "{\n"
@@ -214,20 +177,13 @@ void test_get_and_use_token_from_policy_failed_with_policy_disallow(CuTest *tc) 
                  "}\n";
         
         init_media_config(&config);
-        status = oss_media_create_status();
         
         token = (STSData*) malloc(sizeof(STSData));
 
         ret = oss_media_get_token_from_policy(&config, policy,
-                15 * 60, token, status);
+                15 * 60, token);
 
-        printf ("%s", *status);        
         CuAssertIntEquals(tc, 0, ret);
-        CuAssertIntEquals(tc, 200, status->http_code);
-        CuAssertStrEquals(tc, "", status->error_code);
-        CuAssertStrEquals(tc, "", status->error_msg);
-
-        oss_media_free_status(status);
 
         send_token_to_client(*token);
     }
@@ -242,13 +198,9 @@ void test_get_and_use_token_from_policy_failed_with_policy_disallow(CuTest *tc) 
 
         content = "hello oss media file\n";
 
-        // create file
-        file = oss_media_file_create();
-        file->auth = auth_func;
-
         // open file
-        ret = oss_media_file_open(file, "w");
-        CuAssertIntEquals(tc, 0, ret);
+        file = oss_media_file_open("w", auth_func);
+        CuAssertTrue(tc, NULL != file);
 
         //write file
         write_size = oss_media_file_write(file, content, strlen(content));
@@ -267,15 +219,14 @@ void test_get_and_use_token_from_policy_failed_with_policy_disallow(CuTest *tc) 
         clear_client_token();
         free(token);
         oss_media_file_close(file);
-        oss_media_file_free(file);
     }
 }
 
 static void auth_func(oss_media_file_t *file) {
-    file->host = TEST_OSS_HOST;
-    file->is_oss_domain = 1; //oss host type, host is oss domain ? 1 : 0(cname etc)
-    file->bucket = TEST_BUCKET_NAME;
-    file->filename = "oss_media_file";
+    file->endpoint = TEST_OSS_ENDPOINT;
+    file->is_cname = 0;
+    file->bucket_name = TEST_BUCKET_NAME;
+    file->object_key = "oss_media_file";
     file->access_key_id = global_temp_access_key_id;
     file->access_key_secret = global_temp_access_key_secret;
     file->token = global_temp_token; 
@@ -288,7 +239,7 @@ static int64_t write_file(const char* key, oss_media_config_t *config) {
     aos_pool_t *p;
     aos_string_t bucket;
     aos_string_t object;
-    int is_oss_domain = 1;
+    int is_cname = 0;
     aos_table_t *headers;
     aos_table_t *resp_headers;
     oss_request_options_t *options;
@@ -300,10 +251,10 @@ static int64_t write_file(const char* key, oss_media_config_t *config) {
     aos_pool_create(&p, NULL);
     options = oss_request_options_create(p);
     options->config = oss_config_create(options->pool);
-    aos_str_set(&options->config->host, config->host);
-    aos_str_set(&options->config->id, config->access_key_id);
-    aos_str_set(&options->config->key, config->access_key_secret);
-    options->config->is_oss_domain = config->is_oss_domain;
+    aos_str_set(&options->config->endpoint, config->endpoint);
+    aos_str_set(&options->config->access_key_id, config->access_key_id);
+    aos_str_set(&options->config->access_key_secret, config->access_key_secret);
+    options->config->is_cname = config->is_cname;
     options->ctl = aos_http_controller_create(options->pool, 0);    
     headers = aos_table_make(p, 0);
     aos_str_set(&bucket, TEST_BUCKET_NAME);
@@ -320,14 +271,14 @@ static int64_t write_file(const char* key, oss_media_config_t *config) {
 }
 
 static void init_media_config(oss_media_config_t *config) {
-    config->host = TEST_OSS_HOST;
+    config->endpoint = TEST_OSS_ENDPOINT;
     config->access_key_id = TEST_ACCESS_KEY_ID;
     config->access_key_secret = TEST_ACCESS_KEY_SECRET;
     config->role_arn = TEST_ROLE_ARN; 
-    config->is_oss_domain = 1;
+    config->is_cname = 0;
 }
 
-static aos_status_t* delete_file(oss_media_file_t *file) {
+static void* delete_file(oss_media_file_t *file) {
     aos_pool_t *p;
     aos_string_t bucket;
     aos_string_t object;
@@ -338,15 +289,15 @@ static aos_status_t* delete_file(oss_media_file_t *file) {
     aos_pool_create(&p, NULL);
     options = oss_request_options_create(p);
     options->config = oss_config_create(options->pool);
-    aos_str_set(&options->config->host, file->host);
-    aos_str_set(&options->config->id, TEST_ACCESS_KEY_ID);
-    aos_str_set(&options->config->key, TEST_ACCESS_KEY_SECRET);
-    options->config->is_oss_domain = file->is_oss_domain;
+    aos_str_set(&options->config->endpoint, file->endpoint);
+    aos_str_set(&options->config->access_key_id, TEST_ACCESS_KEY_ID);
+    aos_str_set(&options->config->access_key_secret, TEST_ACCESS_KEY_SECRET);
+    options->config->is_cname = file->is_cname;
     options->ctl = aos_http_controller_create(options->pool, 0);    
-    aos_str_set(&bucket, file->bucket);
-    aos_str_set(&object, file->filename);
+    aos_str_set(&bucket, file->bucket_name);
+    aos_str_set(&object, file->object_key);
 
-    return oss_delete_object(options, &bucket, &object, &resp_headers);
+    oss_delete_object(options, &bucket, &object, &resp_headers);
 }
 
 static void send_token_to_client(oss_media_token_t token) {

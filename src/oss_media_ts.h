@@ -1,7 +1,8 @@
-#ifndef OSS_MEDIA_MPEGTS_H
-#define OSS_MEDIA_MPEGTS_H
+#ifndef OSS_MEDIA_TS_H
+#define OSS_MEDIA_TS_H
 
 #include <stdint.h>
+#include "oss_media_client.h"
 
 /*
  * ================================= TS Protocol =======================================================
@@ -50,99 +51,88 @@
  */
 
 /* packet size: 188 bytes */
-#define OSS_MEDIA_MPEGTS_PACKET_SIZE 188
+#define OSS_MEDIA_TS_PACKET_SIZE 188
 /* encrypt key size: 32 bytes */
-#define OSS_MEDIA_MPEGTS_ENCRYPT_KEY_SIZE 32
+#define OSS_MEDIA_TS_ENCRYPT_KEY_SIZE 32
 /* encrypt packet length */
-#define OSS_MEDIA_MPEGTS_ENCRYPT_PACKET_LENGTH 16
+#define OSS_MEDIA_TS_ENCRYPT_PACKET_LENGTH 16
 
 /**
  *  this struct describes the memory buffer.
  */
-typedef struct oss_media_mpegts_buf_s {
-    uint8_t *buf;
-    unsigned int pos;
-    unsigned int last;
-    unsigned int start;
-    unsigned int end;
-} oss_media_mpegts_buf_t;
+
+typedef enum {
+    st_h264,
+    st_aac
+} stream_type_t;
 
 /**
- *  this struct describes the mpegts frame infomation.
+ *  this struct describes the ts frame infomation.
  */
-typedef struct oss_media_mpegts_frame_s {
-    uint32_t pid;
-    uint32_t sid;
+typedef struct oss_media_ts_frame_s {
+    stream_type_t stream_type;
     uint64_t pts;
     uint64_t dts;
-    uint32_t cc;
+    uint32_t continuity_counter;
     uint8_t  key:1;
-} oss_media_mpegts_frame_t;
+    uint8_t *pos;
+    uint8_t *end;
+} oss_media_ts_frame_t;
 
 /**
  *  this struct describes the m3u8 infomation.
  */
-typedef struct oss_media_mpegts_m3u8_info_s {
-    int duration;
-    char url[256];
-} oss_media_mpegts_m3u8_info_t;
+
+struct oss_media_ts_file_s;
+typedef int (*file_handler_fn_t) (struct oss_media_ts_file_s *file);
 
 /**
- *  mpegts process context.
- */
-typedef struct oss_media_mpegts_context_s {
-    void *file;
-    oss_media_mpegts_buf_t *buffer;
-    int (*handler) (struct oss_media_mpegts_context_s *ctx);
+ *  ts process context.
+*/
 
+typedef struct oss_media_ts_option_s {
+    uint16_t video_pid;
+    uint16_t audio_pid;
+    uint32_t hls_delay_ms;
     uint8_t encrypt:1;
-    char    key[OSS_MEDIA_MPEGTS_ENCRYPT_KEY_SIZE];
-} oss_media_mpegts_context_t;
+    char    key[OSS_MEDIA_TS_ENCRYPT_KEY_SIZE];    
+    file_handler_fn_t handler_func;
+    uint16_t pat_interval_frame_count;
+} oss_media_ts_option_t;
+
+typedef struct oss_media_mpegts_buf_s {
+    uint8_t *buf;
+    unsigned int pos;
+    unsigned int start;
+    unsigned int end;
+} oss_media_ts_buf_t;
+
+typedef struct oss_media_ts_file_s {
+    oss_media_file_t *file;
+    oss_media_ts_buf_t *buffer;
+    oss_media_ts_option_t options;
+    uint64_t frame_count;
+} oss_media_ts_file_t;
 
 /**
- *  callback function, used for processing local files.
- *
- *  return values:
- *      upon successful completion 0 is returned
- *      otherwise non-zero is returned
- */
-int oss_media_mpegts_file_handler(oss_media_mpegts_context_t *ctx);
-
-/**
- *  callback function, used for processing oss files.
- *
- *  return values:
- *      upon successful completion 0 is returned
- *      otherwise non-zero is returned
- */
-int oss_media_mpegts_ossfile_handler(oss_media_mpegts_context_t *ctx);
-
-/**
- *  open mpegts context.
- *
- *  return values:
- *      upon successful completion 0 is returned
- *      otherwise -1 is returned
- */
-int oss_media_mpegts_open(oss_media_mpegts_context_t *ctx);
-
-/**
- *  write mpegts header.
+ *  open ts context.
  *
  *  return values:
  *      upon successful completion 0 is returned
  *      otherwise -1 is returned
  */
-int oss_media_mpegts_write_header(oss_media_mpegts_context_t *ctx);
+int oss_media_ts_open(auth_fn_t auth_funca,
+                      oss_media_ts_file_t **file);
 
 /**
- *  write mpegts frame.
+ *  write ts frame.
  *
  *  return values:
  *      upon successful completion 0 is returned
  *      otherwise -1 is returned
  */
-int oss_media_mpegts_write_frame(oss_media_mpegts_context_t *ctx, oss_media_mpegts_frame_t *frame, oss_media_mpegts_buf_t *buf);
+int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
+                             oss_media_ts_file_t *file);
 
 /**
  *  write m3u8 infomation.
@@ -151,15 +141,19 @@ int oss_media_mpegts_write_frame(oss_media_mpegts_context_t *ctx, oss_media_mpeg
  *      upon successful completion 0 is returned
  *      otherwise -1 is returned
  */
-int oss_media_mpegts_write_m3u8(oss_media_mpegts_context_t *ctx, oss_media_mpegts_m3u8_info_t m3u8[], int nsize);
+
+int oss_media_ts_write_m3u8(int duration,
+                            const char *url,
+                            oss_media_ts_file_t *file);
 
 /**
- *  close mpegts context.
+ *  close ts context.
  *
  *  return values:
  *      upon successful completion 0 is returned
  *      otherwise -1 is returned
  */
-int oss_media_mpegts_close(oss_media_mpegts_context_t *ctx);
+int oss_media_ts_close(oss_media_ts_file_t *file);
+
 
 #endif

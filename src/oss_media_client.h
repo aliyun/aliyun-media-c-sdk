@@ -2,7 +2,6 @@
 #define OSS_MEDIA_CLIENT_H
 
 #include "oss_c_sdk/aos_log.h"
-
 #include "oss_c_sdk/aos_status.h"
 #include "oss_c_sdk/aos_http_io.h"
 #include "oss_c_sdk/oss_define.h"
@@ -15,30 +14,31 @@ OSS_MEDIA_CPP_START
  * this struct describes the file stat of oss media file
  */
 typedef struct {
-    int64_t length;    // file length, in bytes
-    char    *type;     // file type, [Normal, Appendable]
+    int64_t length;
+    int64_t pos;
+    char    *type;
 } oss_media_file_stat_t;
+
+struct oss_media_file_s;
+typedef void (*auth_fn_t)(struct oss_media_file_s *file);
 
 /**
  *  this struct describes the properties of oss media file
  */
 typedef struct oss_media_file_s {
-    void   *ipc;              // ipc info
-
-    char   *host;             // oss host
-    int    is_oss_domain;     // oss host type, host is oss domain ? 1 : 0(cname etc)
-    char   *bucket;           // oss bucket name
-    char   *filename;         // oss object key
-    char   *access_key_id;    // oss temporary access key
-    char   *access_key_secret;// oss temporary access key secret
-    char   *token;            // oss temporary access token
-    time_t expiration;        // oss temporary access expiration
-
-    void (* auth)(struct oss_media_file_s *file); // oss auth function
-
-    char *mode;                 // open mode [r : read; w : write; a : append]
+    void   *ipc;
+    char   *endpoint;
+    int8_t is_cname; 
+    char   *bucket_name;  
+    char   *object_key;
+    char   *access_key_id;
+    char   *access_key_secret;
+    char   *token;
+    char   *mode;
     oss_media_file_stat_t _stat;
-    int64_t _read_offset;       // read offset
+
+    time_t expiration;
+    auth_fn_t auth_func;
 } oss_media_file_t;
 
 /**
@@ -54,16 +54,6 @@ int oss_media_init(aos_log_level_e log_level);
 void oss_media_destroy();
 
 /**
- *  @brief  create the data strcut of oss media file
- */
-oss_media_file_t *oss_media_file_create();
-
-/**
- *  @brief  free the data struct of oss media file
- */
-void oss_media_file_free(oss_media_file_t *file);
-
-/**
  *  @brief  open oss media file, this function opens the oss media file.
  *  @param[in]  param mode:
  *      'r': file access mode of read.
@@ -75,7 +65,7 @@ void oss_media_file_free(oss_media_file_t *file);
  *      otherwise, -1 is returned and code/messaage in struct of file is set to indicate the error.
  *  
  */
-int oss_media_file_open(oss_media_file_t *file, char *mode);
+oss_media_file_t* oss_media_file_open(char *mode, auth_fn_t auth_func);
 
 /**
  *  @brief  close oss media file

@@ -38,10 +38,3 @@ void oss_op_debug(char *op,
     }
 }
 
-void oss_op_error(char *op, aos_status_t *status)
-{
-    aos_error_log("req_id:%s \n", status->req_id);
-    aos_error_log("%s status:\n", op);
-    aos_error_log("\t[code=%d, err_code=%s, err_msg=%s]\n", 
-                  status->code, status->error_code, status->error_msg);
-}

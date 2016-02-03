@@ -5,61 +5,51 @@
 #include "src/sts/libsts.h"
 #include "config.h"
 
-static void init_media_config(oss_media_config_t *config) {    
-
-    config->host = SAMPLE_OSS_HOST;
+static void init_media_config(oss_media_config_t *config) {
+    config->endpoint = SAMPLE_OSS_ENDPOINT;
     config->access_key_id = SAMPLE_ACCESS_KEY_ID;
     config->access_key_secret = SAMPLE_ACCESS_KEY_SECRET;
     config->role_arn = SAMPLE_ROLE_ARN; 
-    config->is_oss_domain = 1;
+    config->is_cname = 0;
 }
 
 void create_bucket() {
-    int r;
-    oss_media_status_t *status;
+    int ret;
     oss_media_config_t config;
     
     init_media_config(&config);
 
-    status = oss_media_create_status();
-    r = oss_media_create_bucket(&config, SAMPLE_BUCKET_NAME, 
-                                OSS_ACL_PRIVATE, status);
+    ret = oss_media_create_bucket(&config, SAMPLE_BUCKET_NAME, OSS_ACL_PRIVATE);
     
-    printf("create bucket. [name=%s, ret=%d, http_code=%d, "
-           "error_code=%s, error_message=%s]\n",
-           SAMPLE_BUCKET_NAME, r, status->http_code, 
-           status->error_code, status->error_msg);
-
-    oss_media_free_status(status);
+    if (0 == ret) {
+        printf("create bucket[%s] succeeded.\n", SAMPLE_BUCKET_NAME);
+    } else {
+        printf("create bucket[%s] failed.\n", SAMPLE_BUCKET_NAME);
+    }
 }
 
 void delete_bucket() {
-    int r;
-    oss_media_status_t *status;
+    int ret;
     oss_media_config_t config;
     
     init_media_config(&config);
-    
-    status = oss_media_create_status();
 
-    r = oss_media_delete_bucket(&config, SAMPLE_BUCKET_NAME, status);
+    ret = oss_media_delete_bucket(&config, SAMPLE_BUCKET_NAME);
 
-    printf("delete bucket. [name=%s, ret=%d, http_code=%d, error_code=%s, "
-           "error_message=%s]\n", SAMPLE_BUCKET_NAME, r, status->http_code, 
-           status->error_code, status->error_msg);
-    
-    oss_media_free_status(status);
+    if (0 == ret) {
+        printf("delete bucket[%s] succeeded.\n", SAMPLE_BUCKET_NAME);
+    } else {
+        printf("delete bucket[%s] failed.\n", SAMPLE_BUCKET_NAME);
+    }    
 }
 
 void create_bucket_lifecycle() {
-    int r;
-    oss_media_status_t *status;
+    int ret;
     oss_media_lifecycle_rules_t *rules;
     oss_media_config_t config;
     
     init_media_config(&config);
 
-    status = oss_media_create_status();
     rules = oss_media_create_lifecycle_rules(2);
     oss_media_lifecycle_rule_t rule1;
     rule1.name = "example-1";
@@ -75,131 +65,123 @@ void create_bucket_lifecycle() {
     rules->rules[0] = &rule1;
     rules->rules[1] = &rule2;
 
-    r = oss_media_create_bucket_lifecycle(&config, 
-            SAMPLE_BUCKET_NAME, rules, status);
+    ret = oss_media_create_bucket_lifecycle(&config, 
+            SAMPLE_BUCKET_NAME, rules);
 
-    printf("create bucket lifecycle. [name=%s, ret=%d, http_code=%d, "
-           "error_code=%s, error_message=%s]\n", SAMPLE_BUCKET_NAME, r, 
-           status->http_code, status->error_code, status->error_msg); 
+    if (0 == ret) {
+        printf("create bucket[%s] lifecycle succeeded.\n", SAMPLE_BUCKET_NAME);
+    } else {
+        printf("create bucket[%s] lifecycle failed.\n", SAMPLE_BUCKET_NAME);
+    }
 
     oss_media_free_lifecycle_rules(rules);
-    oss_media_free_status(status);
 }
 
 void get_bucket_lifecycle() {
-    int r, i;
-    oss_media_status_t *status;
+    int ret, i;
     oss_media_lifecycle_rules_t *rules;
     oss_media_config_t config;
     
     init_media_config(&config);
 
-    status = oss_media_create_status();
     rules = oss_media_create_lifecycle_rules(0);
 
-    r = oss_media_get_bucket_lifecycle(&config, SAMPLE_BUCKET_NAME, rules, status);
-    printf("get bucket lifecycle. [name=%s, ret=%d, http_code=%d, "
-           "error_code=%s, error_message=%s]\n", SAMPLE_BUCKET_NAME, r, 
-           status->http_code, status->error_code, status->error_msg);
+    ret = oss_media_get_bucket_lifecycle(&config, SAMPLE_BUCKET_NAME, rules);
 
-    for (i=0; i<rules->size; i++) {
+    if (0 == ret) {
+        printf("get bucket[%s] lifecycle succeeded.\n", SAMPLE_BUCKET_NAME);
+    } else {
+        printf("get bucket[%s] lifecycle failed.\n", SAMPLE_BUCKET_NAME);
+    }
+
+    for (i = 0; i < rules->size; i++) {
         printf(">>>> rule: [name:%s, path:%s, status=%s, days=%d]\n",
                rules->rules[i]->name, rules->rules[i]->path, 
                rules->rules[i]->status, rules->rules[i]->days);
     }
 
     oss_media_free_lifecycle_rules(rules);
-    oss_media_free_status(status);
 }
 
 void delete_bucket_lifecycle() 
 {
-    int r;
-    oss_media_status_t *status;
+    int ret;
     oss_media_config_t config;
     
     init_media_config(&config);
-    status = oss_media_create_status();
 
-    r = oss_media_delete_bucket_lifecycle(&config, SAMPLE_BUCKET_NAME, status);
+    ret = oss_media_delete_bucket_lifecycle(&config, SAMPLE_BUCKET_NAME);
 
-    printf("delete bucket lifecycle. [name=%s, ret=%d, http_code=%d, "
-           "error_code=%s, error_message=%s]\n", SAMPLE_BUCKET_NAME, r, 
-           status->http_code, status->error_code, status->error_msg);
-
-    oss_media_free_status(status);
+    if (0 == ret) {
+        printf("delete bucket[%s] lifecycle succeeded.\n", SAMPLE_BUCKET_NAME);
+    } else {
+        printf("delete bucket[%s] lifecycle failed.\n", SAMPLE_BUCKET_NAME);
+    }
 }
 
 void delete_file() {
-    int r;
-    oss_media_status_t *status;
+    int ret;
     oss_media_config_t config;
     char *file;
     
     init_media_config(&config);
-    status = oss_media_create_status();
 
     file = "oss_media_file";
-    r = oss_media_delete_file(&config, SAMPLE_BUCKET_NAME, file, status);
+    ret = oss_media_delete_file(&config, SAMPLE_BUCKET_NAME, file);
 
-    printf("delete file. [name=%s, file=%s, ret=%d, http_code=%d, "
-           "error_code=%s, error_message=%s]\n",
-           SAMPLE_BUCKET_NAME, file, r, status->http_code, 
-           status->error_code, status->error_msg);
-
-    oss_media_free_status(status);
+    if (0 == ret) {
+        printf("delete file[%s] succeeded.\n", file);
+    } else {
+        printf("delete file[%s] lifecycle failed.\n", file);
+    }
 }
 
 void list_files() {
-    int i, r;
-    oss_media_status_t *status;
+    int ret, i;
     oss_media_files_t *files;
     oss_media_config_t config;
     
     init_media_config(&config);
-    status = oss_media_create_status();
 
     files = oss_media_create_files();
     files->max_size = 50;
 
-    r = oss_media_list_files(&config, SAMPLE_BUCKET_NAME, files, status);
+    ret = oss_media_list_files(&config, SAMPLE_BUCKET_NAME, files);
 
-    printf("list files. [name=%s, ret=%d, http_code=%d, error_code=%s, "
-           "error_message=%s]\n", SAMPLE_BUCKET_NAME, r, status->http_code, 
-           status->error_code, status->error_msg);
+    if (0 == ret) {
+        printf("list files succeeded.\n");
+    } else {
+        printf("list files lifecycle failed.\n");
+    }
 
     for (i = 0; i < files->size; i++) {
         printf(">>>>file name: %s\n", files->file_names[i]);
     }
 
     oss_media_free_files(files);
-    oss_media_free_status(status);
 }
 
 void get_token() {
-    int r;
-    oss_media_status_t *status;
-    oss_media_token_t  token;
+    int ret;
+    oss_media_token_t token;
     oss_media_config_t config;
     
     init_media_config(&config);
-    status = oss_media_create_status();
 
-    r = oss_media_get_token(&config, SAMPLE_BUCKET_NAME, "/*", "rwa", 
-                            3600, &token, status);
+    ret = oss_media_get_token(&config, SAMPLE_BUCKET_NAME, "/*", "rwa", 
+                            3600, &token);
 
-    printf("get token. [access_key_id=%s, access_key_secret=%s, token=%s, "
-           "ret=%d, http_code=%d, error_code=%s, error_message=%s]\n",
-           token.tmpAccessKeyId, token.tmpAccessKeySecret, token.securityToken, 
-           r, status->http_code, status->error_code, status->error_msg);
-
-    oss_media_free_status(status);
+    if (0 == ret) {
+        printf("get token succeeded, access_key_id=%s, access_key_secret=%s, token=%s\n", 
+               token.tmpAccessKeyId, token.tmpAccessKeySecret, token.securityToken);
+    } else {
+        printf("get token failed.\n");
+    }
 }
 
 void get_token_from_policy() {
-    int r;
-    oss_media_status_t *status;
-    oss_media_token_t  *token;
+    int ret;
+    oss_media_token_t token;
     char *policy;
     oss_media_config_t config;
     
@@ -207,20 +189,15 @@ void get_token_from_policy() {
 
     policy = "{\"Version\":\"1\",\"Statement\":[{\"Effect\":\"Allow\", "
              "\"Action\":\"*\", \"Resource\":\"*\"}]}";
-    
-    token = (STSData*) malloc(sizeof(STSData));
-    status = oss_media_create_status();
 
-    r = oss_media_get_token_from_policy(&config, policy, 3600, token, status);
+    ret = oss_media_get_token_from_policy(&config, policy, 3600, &token);
 
-    printf("get token from policy succeed. [access_key_id=%s, "
-           "access_key_secret=%s, token=%s, ret=%d, http_code=%d, "
-           "error_code=%s, error_message=%s]\n",token->tmpAccessKeyId, 
-           token->tmpAccessKeySecret, token->securityToken, r,
-           status->http_code, status->error_code, status->error_msg);
-
-    free(token);
-    oss_media_free_status(status);
+    if (0 == ret) {
+        printf("get token succeeded, access_key_id=%s, access_key_secret=%s, token=%s\n", 
+               token.tmpAccessKeyId, token.tmpAccessKeySecret, token.securityToken);
+    } else {
+        printf("get token failed.\n");
+    }
 }
 
 static int usage() {
@@ -239,7 +216,7 @@ static int usage() {
 }
 
 int main(int argc, char *argv[]) {
-    oss_media_init();
+    oss_media_init(AOS_LOG_INFO);
     
     if (argc < 2) {
         usage();
