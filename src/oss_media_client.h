@@ -1,11 +1,11 @@
 #ifndef OSS_MEDIA_CLIENT_H
 #define OSS_MEDIA_CLIENT_H
 
-#include "oss_c_sdk/aos_log.h"
-#include "oss_c_sdk/aos_status.h"
-#include "oss_c_sdk/aos_http_io.h"
-#include "oss_c_sdk/oss_define.h"
-#include "oss_c_sdk/oss_api.h"
+#include <oss_c_sdk/aos_log.h>
+#include <oss_c_sdk/aos_status.h>
+#include <oss_c_sdk/aos_http_io.h>
+#include <oss_c_sdk/oss_define.h>
+#include <oss_c_sdk/oss_api.h>
 #include "oss_media_define.h"
 
 OSS_MEDIA_CPP_START
@@ -65,7 +65,10 @@ void oss_media_destroy();
  *      otherwise, -1 is returned and code/messaage in struct of file is set to indicate the error.
  *  
  */
-oss_media_file_t* oss_media_file_open(char *mode, auth_fn_t auth_func);
+oss_media_file_t* oss_media_file_open(char *bucket_name,
+                                      char *object_key,
+                                      char *mode,
+                                      auth_fn_t auth_func);
 
 /**
  *  @brief  close oss media file

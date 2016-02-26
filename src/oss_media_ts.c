@@ -1,4 +1,5 @@
 #include <string.h>
+#include <math.h>
 #include <stdio.h>
 #include <wolfssl/wolfcrypt/aes.h>
 #include "oss_media_ts.h"
@@ -278,13 +279,15 @@ static int oss_media_ts_ossfile_handler(oss_media_ts_file_t *file) {
     int64_t write_size;
 
     length = file->buffer->pos - file->buffer->start;
-    if (length < 0) {
-        return -1;
+    if (length <= 0) {
+        return 0;
     }
 
     write_size = oss_media_file_write(file->file, 
             &file->buffer->buf[file->buffer->start], length);
     if (write_size != length) {
+        aos_error_log("write data to oss file[%s] failed.", 
+                      file->file->object_key);
         return -1;
     }
 
@@ -299,25 +302,39 @@ static int need_write_pat_and_pmt(oss_media_ts_file_t *file,
     return file->frame_count % file->options.pat_interval_frame_count == 0;
 }
 
-int oss_media_ts_open(auth_fn_t auth_func, oss_media_ts_file_t **file) {
+static int ends_with(const char *str, const char *surfix) {
+    return strncmp(str + strlen(str) - strlen(surfix), surfix, strlen(surfix)) == 0;
+}
+
+int oss_media_ts_open(char *bucket_name,
+                      char *object_key,
+                      auth_fn_t auth_func,
+                      oss_media_ts_file_t **file)
+{
     *file = (oss_media_ts_file_t*)malloc(sizeof(oss_media_ts_file_t));
     
-    (*file)->buffer = (oss_media_ts_buf_t*)malloc(sizeof(oss_media_ts_buf_t));
-    (*file)->buffer->start = 0;
-    (*file)->buffer->pos = 0;
-    (*file)->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER; // pos in [start, end)
-    (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER);
-    
-    (*file)->file = oss_media_file_open("a", auth_func);
+    (*file)->file = oss_media_file_open(bucket_name, object_key, "a", auth_func);
 
+    (*file)->frame_count = 0;
     (*file)->options.video_pid = OSS_MEDIA_DEFAULT_VIDEO_PID;
     (*file)->options.audio_pid = OSS_MEDIA_DEFAULT_AUDIO_PID;
     (*file)->options.hls_delay_ms = OSS_MEDIA_TS_HLS_DELAY;
     (*file)->options.encrypt = 0;
     (*file)->options.handler_func = oss_media_ts_ossfile_handler;
     (*file)->options.pat_interval_frame_count = OSS_MEDIA_PAT_INTERVAL_FRAME_COUNT;
-
-    (*file)->frame_count = 0;
+    
+    (*file)->buffer = (oss_media_ts_buf_t*)malloc(sizeof(oss_media_ts_buf_t));
+    (*file)->buffer->start = 0;
+    (*file)->buffer->pos = 0;
+    (*file)->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER; // pos in [start, end)
+    
+    if (ends_with(object_key, OSS_MEDIA_TS_FILE_SURFIX)) {
+        (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER);
+    } else if (ends_with(object_key, OSS_MEDIA_M3U8_FILE_SURFIX)) {
+        (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER / 64);
+    } else {
+        return -1;
+    }
 
     return 0;
 }
@@ -450,38 +467,65 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
     return 0;
 }
 
-int oss_media_ts_write_m3u8(int duration,
-                            const char *url,
-                            oss_media_ts_file_t *file) 
+void oss_media_ts_begin_m3u8(int32_t max_duration, 
+                             int32_t sequence,
+                             oss_media_ts_file_t *file) 
 {
-    static char *header = "#EXTM3U\n\n";
-    char item[256 + 32];
+    static const char *header = "#EXTM3U\n"
+                                "#EXT-X-TARGETDURATION:%d\n"
+                                "#EXT-X-MEDIA-SEQUENCE:%d\n"
+                                "#EXT-X-VERSION:3\n";
+        
+    char m3u8_header[strlen(header) + 10];
+    sprintf(m3u8_header, header, max_duration, sequence);
+        
+    memcpy(&file->buffer->buf[file->buffer->pos], m3u8_header, 
+           strlen(m3u8_header));
+    file->buffer->pos += strlen(m3u8_header);
+}
 
-    memcpy(&file->buffer->buf[file->buffer->pos], header, strlen(header));
-    file->buffer->pos += strlen(header);
+void oss_media_ts_end_m3u8(oss_media_ts_file_t *file) {
+    static const char *end = "#EXT-X-ENDLIST";
+    memcpy(&file->buffer->buf[file->buffer->pos], end, strlen(end));
+    file->buffer->pos += strlen(end);
+}
 
-    sprintf(item, "#EXTINF:%d\n%s\n\n", duration, url);
-
-    if (file->options.handler_func(file) != 0)
-        return -1;
-            
-    file->buffer->pos = file->buffer->start;
+int oss_media_ts_write_m3u8(int size,
+                            oss_media_ts_m3u8_info_t m3u8[],
+                            oss_media_ts_file_t *file)
+{
+    int i;
+    for (i = 0;i < size; i++) {
+        char item[256 + 32];
+        sprintf(item, "#EXTINF:%.3f,\n%s\n", m3u8[i].duration, m3u8[i].url);
+        memcpy(&file->buffer->buf[file->buffer->pos], item, strlen(item));
+        file->buffer->pos += strlen(item);
+    }
     
-    memcpy(&file->buffer->buf[file->buffer->pos], item, strlen(item));
-    file->buffer->pos += strlen(item);
+    if (file->options.handler_func(file) != 0) {
+        return -1;
+    }
 
     return 0;
 }
 
+int oss_media_ts_flush(oss_media_ts_file_t *file) {
+    return file->options.handler_func(file);
+}
+
 int oss_media_ts_close(oss_media_ts_file_t *file) {
-    if (file->options.handler_func(file) != 0) {
+    if (oss_media_ts_flush(file) != 0) {
+        aos_error_log("flush file[%s] failed.", file->file->object_key);
         return -1;
     }
         
     oss_media_file_close(file->file);
+
     free(file->buffer->buf);
     free(file->buffer);
+
     free(file);
+    file = NULL;
 
     return 0;
 }

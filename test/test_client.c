@@ -34,7 +34,7 @@ void test_write_file_succeeded(CuTest *tc) {
     content = "hello oss media file\n";
 
     // create file
-    file = oss_media_file_open("w", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "w", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // write file
@@ -66,7 +66,7 @@ void test_append_file_succeeded(CuTest *tc) {
     content = "hello oss media file\n";
 
     // open file
-    file = oss_media_file_open("a", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "a", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // write file
@@ -100,7 +100,7 @@ void test_write_file_failed_with_invalid_key(CuTest *tc) {
     file_name = "\\invalid.key";
 
     // open file
-    file = oss_media_file_open("w", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "w", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     file->object_key = file_name;;
@@ -128,7 +128,7 @@ void test_write_file_failed_with_wrong_flag(CuTest *tc) {
     content = "hello oss media file\n";
 
     // open file
-    file = oss_media_file_open("r", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "r", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // write file
@@ -149,7 +149,7 @@ void test_write_file_with_normal_cover_appendable(CuTest *tc) {
     content = "hello oss media file\n";
 
     // open file
-    file = oss_media_file_open("a", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "a", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // write file
@@ -160,7 +160,7 @@ void test_write_file_with_normal_cover_appendable(CuTest *tc) {
     oss_media_file_close(file);
 
     // open file
-    file = oss_media_file_open("w", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "w", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     write_size = oss_media_file_write(file, content, strlen(content) - 2);
@@ -187,7 +187,7 @@ void test_append_file_failed_with_appendable_cover_normal(CuTest *tc) {
     content = "hello oss media file\n";
 
     // open file
-    file = oss_media_file_open("w", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "w", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // write file
@@ -198,7 +198,7 @@ void test_append_file_failed_with_appendable_cover_normal(CuTest *tc) {
     oss_media_file_close(file);
 
     // open file
-    file = oss_media_file_open("a", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "a", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     write_size = oss_media_file_write(file, content, strlen(content));
@@ -231,7 +231,7 @@ void test_read_file_succeeded(CuTest *tc) {
     CuAssertTrue(tc, write_size != -1);
 
     // open file for read
-    file = oss_media_file_open("r", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "r", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // read file
@@ -267,7 +267,7 @@ void test_read_part_file_succeeded(CuTest *tc) {
     write_size = write_file(write_content);
 
     // open file for read
-    file = oss_media_file_open("r", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "r", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // check tell
@@ -319,7 +319,7 @@ void test_read_file_failed_with_wrong_flag(CuTest *tc) {
     write_size = write_file(write_content);
 
     // open file for read
-    file = oss_media_file_open("w", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "w", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // read file
@@ -345,7 +345,7 @@ void test_read_file_failed_with_eof(CuTest *tc) {
     write_size = write_file(write_content);
 
     // open file for read
-    file = oss_media_file_open("r", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "r", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     CuAssertIntEquals(tc, write_size - 1, oss_media_file_seek(file, write_size -1));
@@ -385,7 +385,7 @@ void test_read_file_failed_with_key_is_not_exist(CuTest *tc) {
     write_size = write_file(write_content);
 
     // open file for read
-    file = oss_media_file_open("r", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "r", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     file->object_key = "not_exist.key";
@@ -414,7 +414,7 @@ void test_read_file_failed_with_invalid_key(CuTest *tc) {
     write_size = write_file(write_content);
 
     // open file for read
-    file = oss_media_file_open("r", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "r", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     file->object_key = "//invalid.key";
@@ -443,7 +443,7 @@ void test_seek_file_failed_with_invalid_pos(CuTest *tc) {
     write_size = write_file(write_content);
 
     // open file for read
-    file = oss_media_file_open("r", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "r", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // seek file
@@ -470,7 +470,7 @@ void test_seek_file_failed_with_file_not_exist(CuTest *tc) {
     write_size = write_file(write_content);
 
     // open file for read
-    file = oss_media_file_open("r", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "r", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     file->object_key = "not_exist.key";
@@ -504,7 +504,7 @@ void test_open_file_failed_with_wrong_flag(CuTest *tc) {
     int ret;
 
     // open file for read
-    file = oss_media_file_open("x", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "x", auth_func);
     CuAssertTrue(tc, NULL == file);
 }
 
@@ -514,7 +514,7 @@ static int64_t write_file(const char* content) {
     oss_media_file_t *file = NULL;
 
     // open file for write
-    file = oss_media_file_open("w", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "w", auth_func);
     if (NULL == file)
         return -1;
 
@@ -530,8 +530,6 @@ static int64_t write_file(const char* content) {
 static void auth_func(oss_media_file_t *file) {
     file->endpoint = TEST_OSS_ENDPOINT;
     file->is_cname = 0;
-    file->bucket_name = TEST_BUCKET_NAME;
-    file->object_key = "oss_media_file";
     file->access_key_id = TEST_ACCESS_KEY_ID;
     file->access_key_secret = TEST_ACCESS_KEY_SECRET;
     file->token = NULL; //SAMPLE_STS_TOKEN; // if use sts token

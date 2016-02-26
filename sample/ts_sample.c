@@ -8,23 +8,12 @@
 static void auth_func(oss_media_file_t *file) {
     file->endpoint = SAMPLE_OSS_ENDPOINT;
     file->is_cname = 0;
-    file->bucket_name = SAMPLE_BUCKET_NAME;
     file->access_key_id = SAMPLE_ACCESS_KEY_ID;
     file->access_key_secret = SAMPLE_ACCESS_KEY_SECRET;
     file->token = NULL; //SAMPLE_STS_TOKEN; // if use sts token
 
     // expiration 300 sec.
     file->expiration = time(NULL) + 300;
-}
-
-static void auth_ts_func(oss_media_file_t *file) {
-    auth_func(file);
-    file->object_key = "oss_media_ts.ts";
-}
-
-static void auth_m3u8_func(oss_media_file_t *file) {
-    auth_func(file);
-    file->object_key = "oss_media_ts.m3u8";
 }
 
 static void do_write(oss_media_ts_file_t *file) {
@@ -43,7 +32,7 @@ static void do_write(oss_media_ts_file_t *file) {
     len_h264 = fread(buf_h264, 1, max_size, file_h264);
 
     frame.stream_type = st_h264;
-    frame.pts = 7990300;
+    frame.pts = 0;
     frame.continuity_counter = 1;
     frame.key = 1;
 
@@ -75,7 +64,8 @@ static void write_ts() {
     int ret;
     oss_media_ts_file_t *file;
     
-    ret = oss_media_ts_open(auth_ts_func, &file);
+    ret = oss_media_ts_open(SAMPLE_BUCKET_NAME, "oss_media_ts.ts", 
+                            auth_func, &file);
     if (ret != 0) {
         printf("open ts file failed.");
         return;
@@ -93,16 +83,26 @@ static void write_m3u8() {
     oss_media_ts_file_t *file;
     int ret;
 
-    ret = oss_media_ts_open(auth_m3u8_func, &file);
+    ret = oss_media_ts_open(SAMPLE_BUCKET_NAME, "oss_media_ts.m3u8", 
+                            auth_func, &file);
     if (ret != 0) {
         printf("open m3u8 file failed.");
         return;
     }
+
+    oss_media_ts_m3u8_info_t m3u8[3];
+    m3u8[0].duration = 9;
+    memcpy(m3u8[0].url, "video-0.ts", strlen("video-0.ts"));
+    m3u8[1].duration = 10;
+    memcpy(m3u8[1].url, "video-1.ts", strlen("video-1.ts"));
     
-    oss_media_ts_write_m3u8(0, "video-0.ts", file);
+    oss_media_ts_begin_m3u8(10, 0, file);
+    oss_media_ts_write_m3u8(2, m3u8, file);
+    oss_media_ts_end_m3u8(file);
+
     oss_media_ts_close(file);
 
-    printf("write m3u8 to local file[%s] succeeded\n", file->file->object_key);
+    printf("write m3u8 to oss file succeeded\n");
 }
 
 static int usage() {

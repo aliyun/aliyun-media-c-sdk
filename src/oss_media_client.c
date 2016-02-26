@@ -64,7 +64,11 @@ void oss_media_destroy() {
     aos_http_io_deinitialize();
 }
 
-oss_media_file_t* oss_media_file_open(char *mode, auth_fn_t auth_func) {
+oss_media_file_t* oss_media_file_open(char *bucket_name,
+                                      char *object_key,
+                                      char *mode,
+                                      auth_fn_t auth_func) 
+{
     oss_media_file_t *file = malloc(sizeof(oss_media_file_t));
     if (NULL == file) {
         aos_error_log("malloc a new file failed.\n");
@@ -84,6 +88,9 @@ oss_media_file_t* oss_media_file_open(char *mode, auth_fn_t auth_func) {
     
     file->mode = mode;
     file->_stat.pos = 0;
+
+    file->bucket_name = bucket_name;
+    file->object_key = object_key;
 
     if (0 != oss_media_file_stat(file, &(file->_stat)) ) {
         aos_error_log("stat file[%s] failed.\n", file->object_key);
@@ -144,6 +151,7 @@ int oss_media_file_stat(oss_media_file_t *file, oss_media_file_stat_t *stat) {
 
 int64_t oss_media_file_tell(oss_media_file_t *file) {
     if (!is_readable(file)) {
+        aos_error_log("file mode[%s] is not readable\n", file->mode);
         return -1;
     }
     return file->_stat.pos;

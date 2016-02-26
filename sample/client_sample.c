@@ -39,8 +39,6 @@ static void oss_clean(const char *filename) {
 static void auth_func(oss_media_file_t *file) {
     file->endpoint = SAMPLE_OSS_ENDPOINT;
     file->is_cname = 0;
-    file->bucket_name = SAMPLE_BUCKET_NAME;
-    file->object_key = g_filename;
     file->access_key_id = SAMPLE_ACCESS_KEY_ID;
     file->access_key_secret = SAMPLE_ACCESS_KEY_SECRET;
     file->token = NULL; //set NULL if not use token, otherwise use SAMPLE_STS_TOKEN
@@ -56,7 +54,7 @@ static void write_file() {
     oss_media_file_t *file;
 
     // open file
-    file = oss_media_file_open("w", auth_func);
+    file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "w", auth_func);
     if (!file) {
         printf("open media file[%s] failed\n", file->object_key);
         return;
@@ -95,7 +93,7 @@ static void append_file() {
     oss_media_file_t *file;
 
     // open file
-    file = oss_media_file_open("a", auth_func);
+    file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "a", auth_func);
 
     // open file
     if(!file) {
@@ -129,7 +127,7 @@ static void read_file() {
     oss_media_file_t *file;
 
     // open file
-    file = oss_media_file_open("r", auth_func);
+    file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "r", auth_func);
     if (!file) {
         oss_media_file_close(file);
         printf("open media file failed\n");
@@ -172,7 +170,7 @@ static void seek_file() {
     oss_media_file_t *file;
 
     // open file
-    file = oss_media_file_open("r", auth_func);
+    file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "r", auth_func);
     if (!file) {
         oss_media_file_close(file);
         printf("open media file failed\n");
@@ -225,7 +223,7 @@ static void error_code() {
     oss_media_file_t *file;
 
     // open file
-    file = oss_media_file_open("a", auth_func);
+    file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "a", auth_func);
     if (!file) {
         oss_media_file_close(file);
         printf("open media file failed\n");
@@ -282,7 +280,7 @@ static void perf(int loop) {
     }
     buf[nbyte - 1] = '\n';
 
-    file = oss_media_file_open("a", auth_func);
+    file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "a", auth_func);
     if (!file) {
         oss_media_file_close(file);
 
@@ -304,16 +302,6 @@ static void perf(int loop) {
     oss_media_file_close(file);
 }
 
-static void camera_app_auth_index(oss_media_file_t *file) {
-    auth_func(file);
-    file->object_key = "oss_camera.idx";
-}
-
-static void camera_app_auth_h264(oss_media_file_t *file) {
-    auth_func(file);
-    file->object_key = "oss_camera.h264";
-}
-
 static void camera_app(char *h264) {
     oss_clean("oss_camera.idx");
     oss_clean("oss_camera.h264");
@@ -327,8 +315,10 @@ static void camera_app(char *h264) {
     oss_media_file_t *idx_file;
     oss_media_file_t *h264_file;
 
-    idx_file = oss_media_file_open("w", camera_app_auth_index);
-    h264_file = oss_media_file_open("a", camera_app_auth_h264);
+    idx_file = oss_media_file_open(SAMPLE_BUCKET_NAME, "oss_camera.idx", "w", 
+                                   auth_func);
+    h264_file = oss_media_file_open(SAMPLE_BUCKET_NAME, "oss_camera.h264", "a", 
+                                    auth_func);
 
     if (!idx_file || !h264_file) {
         printf ("open file failed.");
@@ -370,8 +360,10 @@ static void camera_app(char *h264) {
 
     // read idx info
     // we need the 20seconds's video
-    idx_file = oss_media_file_open("r", camera_app_auth_index);
-    h264_file = oss_media_file_open("r", camera_app_auth_h264);
+    idx_file = oss_media_file_open(SAMPLE_BUCKET_NAME, "oss_camera.idx", 
+                                   "r", auth_func);
+    h264_file = oss_media_file_open(SAMPLE_BUCKET_NAME, "oss_camera.h264", 
+                                    "r", auth_func);
     if (!idx_file || !h264_file) {
         printf ("open file failed.");
         return;

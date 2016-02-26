@@ -46,7 +46,8 @@ void test_get_and_use_token_succeeded(CuTest *tc) {
         content = "hello oss media file\n";
 
         // open file
-        file = oss_media_file_open("w", auth_func);
+        file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", 
+                "w", auth_func);
         CuAssertTrue(tc, NULL != file);
 
         // write file
@@ -135,7 +136,8 @@ void test_get_and_use_token_from_policy_succeeded(CuTest *tc) {
         content = "hello oss media file\n";
 
         // open file
-        file = oss_media_file_open("w", auth_func);
+        file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", 
+                "w", auth_func);
         CuAssertTrue(tc, NULL != file);
 
         // write file
@@ -199,7 +201,8 @@ void test_get_and_use_token_from_policy_failed_with_policy_disallow(CuTest *tc) 
         content = "hello oss media file\n";
 
         // open file
-        file = oss_media_file_open("w", auth_func);
+        file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", 
+                "w", auth_func);
         CuAssertTrue(tc, NULL != file);
 
         //write file
@@ -225,8 +228,6 @@ void test_get_and_use_token_from_policy_failed_with_policy_disallow(CuTest *tc) 
 static void auth_func(oss_media_file_t *file) {
     file->endpoint = TEST_OSS_ENDPOINT;
     file->is_cname = 0;
-    file->bucket_name = TEST_BUCKET_NAME;
-    file->object_key = "oss_media_file";
     file->access_key_id = global_temp_access_key_id;
     file->access_key_secret = global_temp_access_key_secret;
     file->token = global_temp_token; 

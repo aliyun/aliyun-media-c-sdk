@@ -4,52 +4,6 @@
 #include <stdint.h>
 #include "oss_media_client.h"
 
-/*
- * ================================= TS Protocol =======================================================
- *
- * * TS
- *
- * |<-----------  188 bytes  -------------->|<-----------  188 bytes  -------------->| (Bytes)
- * +--------+-------------------------------+--------+-------------------------------+
- * | Header |         Payload               | Header |           Payload             |
- * +--------+-------------------------------+--------+-------------------------------+
- *
- * * TS Header
- *
- * |<------------  8  ------------->| 1  | 1  | 1  |<-----------  13  ------------>|<-  2 ->|  1 | 1  |<----  4   ---->| (Bits)
- * +--------------------------------+----+----+----+--------------+----------------+--------+----+----+----------------+
- * |         sync byte              |TEI |PUSI| TP |             PID               |   TSC  | AF |  P |       CC       |
- * +--------------------------------+----+----+----+--------------+----------------+--------+----+----+----------------+
- *
- * |<-  8 ->|<---   1   --->|<--    1    -->|<--   1   -->|  1   |   1  |    1   |    1    |     1      | 48  |  48  |<--  8  -->| variable| variable |  (Bits)
- * +--------+---------------+---------------+-------------+------+------+--------+---------+------------+-----+------+-----------+---...---+----------+
- * | Field  | Discontinuity | Random Access | ES Priority | PCR  | OPCR | Splice | Private | Adaptation | PCR | OPCR | Splice    | Private | Stuffing |
- * | Length | Indicator     | Indicator     | Indicator   | Flag | Flag | Flag   | Flag    | Ext Flag   |     |      | Countdown | Data    | Bytes    |
- * +--------+---------------+---------------+-------------+------+------+--------+---------+------------+-----+------+-----------+---...---+----------+
- *
- * * PES
- * +--------+-----------------+--------+-----------------+
- * | Header |       ES        | Header |       ES        |
- * +--------+-----------------+--------+-----------------+
- *
- * * PES Header
- *
- * |<---  3   --->|<-  1 ->|<- 2  ->|  variable  | variable | (Bytes)
- * +--------------+--------+--------+------------+----------+
- * | Packet Start | Stream | Packet | Optional   | Stuffing |
- * | Code  Prefix | ID     | Length | PES Header | Bytes    |
- * +--------------+--------+--------+------------+----------+
- *
- * * Optional PES Header
- *
- * |<- 2  ->|<--  2   -->|<-- 1  -->|<--   1  -->|<--  1  -->|<-- 1  -->|<--  2  -->|  1   |    1    |   4   |<--  8   -->| variable | variable | (Bits)
- * +--------+------------+----------+------------+-----------+----------+-----------+------+---------+--...--+------------+----------+----------+
- * | Marker | Scrambling | Priority | Data Align | Copyright | Original | PTS / DTS | ESCR | ES Rate | Other | PES Header | Optional | Stuffing |
- * | Bits   | Control    |          | Indicator  |           | or Copy  | Indicator | Flag | Flag    | Flags | Length     | Fields   | Bytes    |
- * +--------+------------+----------+------------+-----------+----------+-----------+------+---------+--...--+------------+----------+----------+
- *
- */
-
 /* packet size: 188 bytes */
 #define OSS_MEDIA_TS_PACKET_SIZE 188
 /* encrypt key size: 32 bytes */
@@ -57,20 +11,33 @@
 /* encrypt packet length */
 #define OSS_MEDIA_TS_ENCRYPT_PACKET_LENGTH 16
 
+#define OSS_MEDIA_M3U8_URL_LENGTH 256
 /**
  *  this struct describes the memory buffer.
  */
 
 typedef enum {
     st_h264,
-    st_aac
+    st_aac,
+    st_mp3
 } stream_type_t;
+
+typedef enum {
+    ft_unspecified = 0,
+    ft_non_idr = 1,
+    ft_idr = 5,
+    ft_sei = 6,
+    ft_sps = 7,
+    ft_pps = 8,
+    ft_aud = 9,
+} frame_type_t;
 
 /**
  *  this struct describes the ts frame infomation.
  */
 typedef struct oss_media_ts_frame_s {
     stream_type_t stream_type;
+    frame_type_t frame_type;
     uint64_t pts;
     uint64_t dts;
     uint32_t continuity_counter;
@@ -85,6 +52,11 @@ typedef struct oss_media_ts_frame_s {
 
 struct oss_media_ts_file_s;
 typedef int (*file_handler_fn_t) (struct oss_media_ts_file_s *file);
+
+typedef struct oss_media_ts_m3u8_info_s {
+    float duration;
+    char url[OSS_MEDIA_M3U8_URL_LENGTH];
+} oss_media_ts_m3u8_info_t;
 
 /**
  *  ts process context.
@@ -121,7 +93,9 @@ typedef struct oss_media_ts_file_s {
  *      upon successful completion 0 is returned
  *      otherwise -1 is returned
  */
-int oss_media_ts_open(auth_fn_t auth_funca,
+int oss_media_ts_open(char *bucket_name,
+                      char *object_key,
+                      auth_fn_t auth_func,
                       oss_media_ts_file_t **file);
 
 /**
@@ -142,9 +116,15 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
  *      otherwise -1 is returned
  */
 
-int oss_media_ts_write_m3u8(int duration,
-                            const char *url,
+void oss_media_ts_begin_m3u8(int32_t max_duration, 
+                             int32_t sequence,
+                             oss_media_ts_file_t *file);
+
+int oss_media_ts_write_m3u8(int size,
+                            oss_media_ts_m3u8_info_t m3u8[],
                             oss_media_ts_file_t *file);
+
+void oss_media_ts_end_m3u8(oss_media_ts_file_t *file);
 
 /**
  *  close ts context.
@@ -154,6 +134,8 @@ int oss_media_ts_write_m3u8(int duration,
  *      otherwise -1 is returned
  */
 int oss_media_ts_close(oss_media_ts_file_t *file);
+
+int oss_media_ts_flush(oss_media_ts_file_t *file);
 
 
 #endif
