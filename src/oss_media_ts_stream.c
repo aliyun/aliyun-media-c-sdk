@@ -35,7 +35,6 @@ int oss_media_ts_stream_open(auth_fn_t auth_func,
     (*stream)->option = option;
     (*stream)->ts_file_index = 0;
     (*stream)->current_file_begin_pts = -1;
-    (*stream)->m3u8_info_size = 0;
 
     aos_pool_create(&(*stream)->pool, NULL);
 
@@ -123,34 +122,34 @@ static int write_m3u8(float duration,
     int i;
     int ret;
     int pos;
+    int32_t cur_m3u8_count;
 
     if (stream->option->is_live) {
+        int32_t hls_list_size = stream->option->hls_list_size;
+        cur_m3u8_count = hls_list_size > stream->ts_file_index ? 
+                         stream->ts_file_index : hls_list_size;
+
         oss_media_ts_begin_m3u8(stream->option->hls_time,
-                                stream->ts_file_index - stream->m3u8_info_size,
+                                stream->ts_file_index - cur_m3u8_count,
                                 stream->m3u8_file);
 
-        int32_t m3u8_max_count = stream->option->hls_list_size;
-        if (stream->m3u8_info_size == m3u8_max_count) {
-            for (i = 0; i < m3u8_max_count - 1; i++) {
+        if (stream->ts_file_index > hls_list_size) {
+            for (i = 0; i < hls_list_size - 1; i++) {
                 stream->m3u8_infos[i].duration = stream->m3u8_infos[i + 1].duration;
                 memcpy(stream->m3u8_infos[i].url, stream->m3u8_infos[i+1].url,
                        OSS_MEDIA_M3U8_URL_LENGTH);
             }
         }
-
-        if (stream->m3u8_info_size < m3u8_max_count) {
-            stream->m3u8_info_size++;
-        }
-        pos = stream->m3u8_info_size - 1;
     } else {
         if (stream->m3u8_file->file->_stat.length == 0) {
             oss_media_ts_begin_m3u8(stream->option->hls_time, 0, 
                     stream->m3u8_file);
         }
 
-        pos = 0;
-        stream->m3u8_info_size = 1;
+        cur_m3u8_count = 1;
     }
+
+    pos = cur_m3u8_count - 1;
 
     aos_pool_t *sub_pool;
     aos_pool_create(&sub_pool, stream->pool);
@@ -160,8 +159,8 @@ static int write_m3u8(float duration,
 
     stream->m3u8_infos[pos].duration = duration;
     
-    ret = oss_media_ts_write_m3u8(stream->m3u8_info_size, 
-                                  stream->m3u8_infos, stream->m3u8_file);
+    ret = oss_media_ts_write_m3u8(cur_m3u8_count, stream->m3u8_infos, 
+                                  stream->m3u8_file);
 
     return ret;
 }
@@ -294,7 +293,7 @@ static int get_video_frame(uint8_t *buf, uint64_t len,
 
     last_pos = frame->pos - buf;
     cur_pos = last_pos;
-    inc_pts = 90000 / stream->option->video_frame_rate;
+    inc_pts = 90 * stream->option->video_frame_rate;
     for (i = frame->end - buf; i < len - 3; i++) {
         if ((buf[i] & 0x0F) == 0x00 && buf[i+1] == 0x00
             && buf[i+2] == 0x00 && buf[i+3] == 0x01)
@@ -422,11 +421,6 @@ int oss_media_ts_stream_write(uint8_t *video_buf,
 }
 
 int oss_media_ts_stream_close(oss_media_ts_stream_t *stream) {
-    // write end flag to m3u8 file and close for vod ts
-    if (!stream->option->is_live) {
-        oss_media_ts_end_m3u8(stream->m3u8_file);
-    }
-
     float duration = 0.0;
     if (stream->audio_frame->pts > stream->current_file_begin_pts) {
         duration = (stream->audio_frame->pts - 
@@ -450,6 +444,11 @@ int oss_media_ts_stream_close(oss_media_ts_stream_t *stream) {
     if (oss_media_ts_close(stream->ts_file) != 0) {
         aos_error_log("close ts file failed.");
         return -1;
+    }
+
+    // write end flag to m3u8 file and close for vod ts
+    if (!stream->option->is_live) {
+        oss_media_ts_end_m3u8(stream->m3u8_file);
     }
 
     if (oss_media_ts_close(stream->m3u8_file) != 0) {

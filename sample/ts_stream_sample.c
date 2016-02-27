@@ -296,7 +296,7 @@ static void write_video_audio_live() {
             return;
         }
         free(file_path);
-        sleep(5);
+        sleep(8);
     } while (video_index++ < 9 && audio_index++ < 9);
 
     ret = oss_media_ts_stream_close(stream);
