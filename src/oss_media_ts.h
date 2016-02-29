@@ -93,7 +93,7 @@ typedef struct oss_media_ts_file_s {
     oss_media_file_t *file;
     oss_media_ts_buf_t *buffer;
     oss_media_ts_option_t options;
-    uint64_t frame_count;
+    int64_t frame_count;
 } oss_media_ts_file_t;
 
 /**

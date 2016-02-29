@@ -30,7 +30,7 @@ static void make_crc_table(void)
 
 static uint32_t calculate_crc32(uint8_t *data, int32_t length) {
     static int table_made = 0;
-    if (!table_made) make_crc_table();  
+    if (!table_made) make_crc_table();
 
     uint32_t i;
     uint32_t crc32 = 0xFFFFFFFF;
@@ -93,25 +93,36 @@ static uint8_t *oss_media_ts_write_hls_header(uint8_t *p, int16_t pid)
     *p++ = (transport_scrambling_control << 6) | (adaptation_field_control << 4)
            | (continuity_counter & 0x0F);
     *p++ = 0x00;
+
+    return p;
 }
 
 static uint8_t* oss_media_ts_set_crc32(uint8_t *start, uint8_t *p) {
-    uint32_t crc32 = calculate_crc32(start + OSS_MEDIA_TS_HEADER_LENGTH, 
+    uint32_t crc32 = calculate_crc32(start + OSS_MEDIA_TS_HEADER_LENGTH,
             p - start - OSS_MEDIA_TS_HEADER_LENGTH);
     *p++ = crc32 >> 24;
     *p++ = (crc32 >> 16) & 0xff;
     *p++ = (crc32 >> 8) & 0xff;
     *p++ = crc32 & 0xFF;
+
     return p;
 }
 
-static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
-    // write data to oss when buffer is full
+static int oss_media_handle_file(oss_media_ts_file_t *file) {
     if (file->buffer->end - file->buffer->pos < OSS_MEDIA_TS_PACKET_SIZE) {
         if (file->options.handler_func(file) != 0) {
             aos_error_log("execute handler func failed.");
             return -1;
         }
+    }
+    return 0;
+}
+
+static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
+    // write data to oss when buffer is full
+    if (0 != oss_media_handle_file(file)) {
+        aos_error_log("execute handler func failed.");
+        return -1;        
     }
 
     // init pos parameter
@@ -165,11 +176,9 @@ static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
 
 static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
     // write data to oss when buffer is full
-    if (file->buffer->end - file->buffer->pos < OSS_MEDIA_TS_PACKET_SIZE) {
-        if (file->options.handler_func(file) != 0) {
-            aos_error_log("execute handler func failed.");
-            return -1;
-        }
+    if (0 != oss_media_handle_file(file)) {
+        aos_error_log("execute handler func failed.");
+        return -1;        
     }
 
     // init pos parameter
@@ -285,10 +294,10 @@ static int oss_media_ts_ossfile_handler(oss_media_ts_file_t *file) {
         return 0;
     }
 
-    write_size = oss_media_file_write(file->file, 
+    write_size = oss_media_file_write(file->file,
             &file->buffer->buf[file->buffer->start], length);
     if (write_size != length) {
-        aos_error_log("write data to oss file[%s] failed.", 
+        aos_error_log("write data to oss file[%s] failed.",
                       file->file->object_key);
         return -1;
     }
@@ -298,8 +307,7 @@ static int oss_media_ts_ossfile_handler(oss_media_ts_file_t *file) {
     return 0;
 }
 
-static int oss_media_ts_need_write_pat_and_pmt(oss_media_ts_file_t *file, 
-        oss_media_ts_frame_t *frame) 
+static int oss_media_ts_need_write_pat_and_pmt(oss_media_ts_file_t *file) 
 {
     return file->frame_count % file->options.pat_interval_frame_count == 0;
 }
@@ -316,6 +324,10 @@ int oss_media_ts_open(char *bucket_name,
     *file = (oss_media_ts_file_t*)malloc(sizeof(oss_media_ts_file_t));
     
     (*file)->file = oss_media_file_open(bucket_name, object_key, "a", auth_func);
+    if ((*file)->file == NULL) {
+        aos_error_log("open oss media file failed.");
+        return -1;
+    }
 
     (*file)->frame_count = 0;
     (*file)->options.video_pid = OSS_MEDIA_DEFAULT_VIDEO_PID;
@@ -328,14 +340,13 @@ int oss_media_ts_open(char *bucket_name,
     (*file)->buffer = (oss_media_ts_buf_t*)malloc(sizeof(oss_media_ts_buf_t));
     (*file)->buffer->start = 0;
     (*file)->buffer->pos = 0;
-    (*file)->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER; // pos in [start, end)
-    
-    if (oss_media_ts_ends_with(object_key, OSS_MEDIA_TS_FILE_SURFIX)) {
-        (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER);
-    } else if (oss_media_ts_ends_with(object_key, OSS_MEDIA_M3U8_FILE_SURFIX)) {
+        
+    if (oss_media_ts_ends_with(object_key, OSS_MEDIA_M3U8_FILE_SURFIX)) {
         (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER / 32);
+        (*file)->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER / 32;
     } else {
-        return -1;
+        (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER);
+        (*file)->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER;
     }
 
     return 0;
@@ -350,7 +361,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
     uint32_t pid;
 
     // write pat and pmt table
-    if (oss_media_ts_need_write_pat_and_pmt(file, frame)) {
+    if (oss_media_ts_need_write_pat_and_pmt(file)) {
         oss_media_ts_write_pat_and_pmt(file);
     }
 
@@ -368,11 +379,9 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
     memset(packet, 0x00, OSS_MEDIA_TS_PACKET_SIZE);
     while (frame->pos < frame->end) {
         // flush if buffer is full.
-        if (file->buffer->end - file->buffer->pos < sizeof(packet)) {
-            if (file->options.handler_func(file) != 0) {
-                aos_error_log("execute handler func failed.");
-                return -1;
-            }
+        if (0 != oss_media_handle_file(file)) {
+            aos_error_log("execute handler func failed.");
+            return -1;        
         }
 
         p = packet;
