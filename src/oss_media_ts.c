@@ -9,6 +9,8 @@
 #define OSS_MEDIA_TS_HLS_DELAY (700 * 90)
 
 #define OSS_MEDIA_TS_HEADER_LENGTH 5
+#define OSS_MEDIA_PAT_PID 0
+#define OSS_MEDIA_PMT_PID 4097
 
 static uint32_t crc_table[256];
 
@@ -73,26 +75,17 @@ static void oss_media_ts_encrypt_packet(oss_media_ts_file_t *file, uint8_t *pack
     wc_AesCbcEncrypt(&aes, packet, packet, OSS_MEDIA_TS_ENCRYPT_PACKET_LENGTH);
 }
 
-static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
-    if (file->buffer->end - file->buffer->pos < OSS_MEDIA_TS_PACKET_SIZE) {
-        if (file->options.handler_func(file) != 0) {
-            return -1;
-        }
-    }
-
-    uint8_t *start = file->buffer->buf + file->buffer->pos;
-    uint8_t *p = start;
-
-    // HLS header
+static uint8_t *oss_media_ts_write_hls_header(uint8_t *p, int16_t pid)
+{
     uint8_t sync_byte = 0x47;
     uint8_t transport_error_indicator = 0;
     uint8_t payload_unit_start_indicator = 1;
     uint8_t transport_priority = 0;
-    uint16_t pat_pid = 0;
+    uint16_t pat_pid = pid;
     uint8_t transport_scrambling_control = 0;
     uint8_t adaptation_field_control = 1;
     uint8_t continuity_counter = 0;
-
+    
     *p++ = sync_byte;
     *p++ = (transport_error_indicator << 7) | (payload_unit_start_indicator << 6) 
            | (transport_priority << 5) | (pat_pid >> 8) & 0x1F;
@@ -100,8 +93,35 @@ static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
     *p++ = (transport_scrambling_control << 6) | (adaptation_field_control << 4)
            | (continuity_counter & 0x0F);
     *p++ = 0x00;
+}
 
-    // PAT
+static uint8_t* oss_media_ts_set_crc32(uint8_t *start, uint8_t *p) {
+    uint32_t crc32 = calculate_crc32(start + OSS_MEDIA_TS_HEADER_LENGTH, 
+            p - start - OSS_MEDIA_TS_HEADER_LENGTH);
+    *p++ = crc32 >> 24;
+    *p++ = (crc32 >> 16) & 0xff;
+    *p++ = (crc32 >> 8) & 0xff;
+    *p++ = crc32 & 0xFF;
+    return p;
+}
+
+static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
+    // write data to oss when buffer is full
+    if (file->buffer->end - file->buffer->pos < OSS_MEDIA_TS_PACKET_SIZE) {
+        if (file->options.handler_func(file) != 0) {
+            aos_error_log("execute handler func failed.");
+            return -1;
+        }
+    }
+
+    // init pos parameter
+    uint8_t *start = file->buffer->buf + file->buffer->pos;
+    uint8_t *p = start;
+
+    // HLS header
+    p = oss_media_ts_write_hls_header(p, OSS_MEDIA_PAT_PID);
+
+    // PAT body
     uint8_t section_syntax_indicator = 1;
     uint8_t zero = 0;
     uint8_t reserved_1 = 3;
@@ -116,7 +136,7 @@ static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
     uint8_t reserved_3 = 7;
     uint16_t program_id = 4097;
 
-    *p++ = pat_pid & 0XFF;
+    *p++ = OSS_MEDIA_PAT_PID & 0XFF;
     *p++ = (section_syntax_indicator << 7) | (zero << 6)
            | (reserved_1 << 4) | ((section_length >> 8) & 0x0F);
     *p++ = section_length & 0xFF;
@@ -131,14 +151,9 @@ static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
     *p++ = (reserved_3 << 5) | ((program_id >> 8) & 0x1F);
     *p++ = program_id & 0xFF;
 
-    // calculate crc32
-    uint32_t crc32 = calculate_crc32(start + OSS_MEDIA_TS_HEADER_LENGTH, 
-            p - start - OSS_MEDIA_TS_HEADER_LENGTH);
-    *p++ = crc32 >> 24;
-    *p++ = (crc32 >> 16) & 0xff;
-    *p++ = (crc32 >> 8) & 0xff;
-    *p++ = crc32 & 0xff;
-
+    // set crc32
+    p = oss_media_ts_set_crc32(start, p);
+    
     // fill 0xFF
     while (p - start < OSS_MEDIA_TS_PACKET_SIZE) {
         *p++ = 0xff;
@@ -149,34 +164,22 @@ static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
 }
 
 static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
+    // write data to oss when buffer is full
     if (file->buffer->end - file->buffer->pos < OSS_MEDIA_TS_PACKET_SIZE) {
         if (file->options.handler_func(file) != 0) {
+            aos_error_log("execute handler func failed.");
             return -1;
         }
     }
 
+    // init pos parameter
     uint8_t *start = file->buffer->buf + file->buffer->pos;
     uint8_t *p = start;
 
     // HLS header
-    uint8_t sync_byte = 0x47;
-    uint8_t transport_error_indicator = 0;
-    uint8_t payload_unit_start_indicator = 1;
-    uint8_t transport_priority = 0;
-    uint16_t pmt_pid = 4097;
-    uint8_t transport_scrambling_control = 0;
-    uint8_t adaptation_field_control = 1;
-    uint8_t continuity_counter = 0;
+    p = oss_media_ts_write_hls_header(p, OSS_MEDIA_PMT_PID);
 
-    *p++ = sync_byte;
-    *p++ = (transport_error_indicator << 7) | (payload_unit_start_indicator << 6) 
-           | (transport_priority << 5) | (pmt_pid >> 8) & 0x1F;
-    *p++ = pmt_pid & 0xff;
-    *p++ = (transport_scrambling_control << 6) | (adaptation_field_control << 4)
-           | (continuity_counter & 0x0F);
-    *p++ = 0x00;
-
-    // PMT
+    // PMT body
     uint8_t table_id = 0x02;
     uint8_t section_syntax_indicator = 1;
     uint8_t zero = 0;
@@ -208,6 +211,7 @@ static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
     *p++ = (reserved_4 << 4) | ((program_info_length >> 8) & 0xFF);
     *p++ = program_info_length & 0xFF;
 
+    // set video stream info
     {
         uint8_t stream_type = 0x1b;
         uint8_t reserved_5 = 7;
@@ -222,6 +226,7 @@ static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
         *p++ = ES_info_length & 0xFF;                
     }
 
+    // set audio stream info
     {
         uint8_t stream_type = 0x0f;
         uint8_t reserved_5 = 7;
@@ -236,13 +241,8 @@ static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
         *p++ = ES_info_length & 0xFF;                
     }
     
-    // calculate CRC32
-    uint32_t crc32 = calculate_crc32(start + OSS_MEDIA_TS_HEADER_LENGTH, 
-            p - start - OSS_MEDIA_TS_HEADER_LENGTH);
-    *p++ = crc32 >> 24;
-    *p++ = (crc32 >> 16) & 0xFF;
-    *p++ = (crc32 >> 8) & 0xFF;
-    *p++ = crc32 & 0xFF;
+    // set CRC32
+    p = oss_media_ts_set_crc32(start, p);
 
     // fill 0xFF
     while (p - start < OSS_MEDIA_TS_PACKET_SIZE) {
@@ -255,10 +255,12 @@ static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
 
 static int oss_media_ts_write_pat_and_pmt(oss_media_ts_file_t *file) {
     if (0 != oss_media_ts_write_pat(file)) {
+        aos_error_log("write pat table failed.");
         return -1;
     }
 
     if (0 != oss_media_ts_write_pmt(file)) {
+        aos_error_log("write pmt table failed.");
         return -1;
     }
 
@@ -296,13 +298,13 @@ static int oss_media_ts_ossfile_handler(oss_media_ts_file_t *file) {
     return 0;
 }
 
-static int need_write_pat_and_pmt(oss_media_ts_file_t *file, 
-                                  oss_media_ts_frame_t *frame) 
+static int oss_media_ts_need_write_pat_and_pmt(oss_media_ts_file_t *file, 
+        oss_media_ts_frame_t *frame) 
 {
     return file->frame_count % file->options.pat_interval_frame_count == 0;
 }
 
-static int ends_with(const char *str, const char *surfix) {
+static int oss_media_ts_ends_with(const char *str, const char *surfix) {
     return strncmp(str + strlen(str) - strlen(surfix), surfix, strlen(surfix)) == 0;
 }
 
@@ -328,10 +330,10 @@ int oss_media_ts_open(char *bucket_name,
     (*file)->buffer->pos = 0;
     (*file)->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER; // pos in [start, end)
     
-    if (ends_with(object_key, OSS_MEDIA_TS_FILE_SURFIX)) {
+    if (oss_media_ts_ends_with(object_key, OSS_MEDIA_TS_FILE_SURFIX)) {
         (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER);
-    } else if (ends_with(object_key, OSS_MEDIA_M3U8_FILE_SURFIX)) {
-        (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER / 64);
+    } else if (oss_media_ts_ends_with(object_key, OSS_MEDIA_M3U8_FILE_SURFIX)) {
+        (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER / 32);
     } else {
         return -1;
     }
@@ -348,7 +350,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
     uint32_t pid;
 
     // write pat and pmt table
-    if (need_write_pat_and_pmt(file, frame)) {
+    if (oss_media_ts_need_write_pat_and_pmt(file, frame)) {
         oss_media_ts_write_pat_and_pmt(file);
     }
 
@@ -358,6 +360,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
     } else if (frame->stream_type == st_aac) {
         pid = file->options.audio_pid;
     } else {
+        aos_error_log("stream type[%d] is not support", frame->stream_type);
         return -1;      
     }
 
@@ -367,6 +370,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
         // flush if buffer is full.
         if (file->buffer->end - file->buffer->pos < sizeof(packet)) {
             if (file->options.handler_func(file) != 0) {
+                aos_error_log("execute handler func failed.");
                 return -1;
             }
         }
@@ -380,7 +384,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
         }
         *p++ = pid;                         // pid
         *p++ = 0x10 | (frame->continuity_counter++ & 0x0F);
-
+        
         if (first) {
             if (frame->key) {
                 packet[3] |= 0x20;          // adaptation
@@ -429,6 +433,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
         body_size = packet + sizeof(packet) - p;
         in_size = frame->end - frame->pos;
 
+        // fill data
         if (in_size >= body_size) {
             memcpy(p, frame->pos, body_size);
             p += body_size;
@@ -455,6 +460,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
             frame->pos = frame->end;
         }
         
+        // encrypt
         if (file->options.encrypt) {
             oss_media_ts_encrypt_packet(file, packet);
         }
@@ -476,7 +482,7 @@ void oss_media_ts_begin_m3u8(int32_t max_duration,
                                 "#EXT-X-MEDIA-SEQUENCE:%d\n"
                                 "#EXT-X-VERSION:3\n";
         
-    char m3u8_header[strlen(header) + 10];
+    char m3u8_header[strlen(header) + 12];
     sprintf(m3u8_header, header, max_duration, sequence);
         
     memcpy(&file->buffer->buf[file->buffer->pos], m3u8_header, 
@@ -502,7 +508,7 @@ int oss_media_ts_write_m3u8(int size,
         file->buffer->pos += strlen(item);
     }
     
-    if (file->options.handler_func(file) != 0) {
+    if (oss_media_ts_flush(file) != 0) {
         return -1;
     }
 

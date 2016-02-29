@@ -1,8 +1,8 @@
 #include "oss_media_ts_stream.h"
 
-static int32_t get_digit_num(int32_t value) 
+static int16_t oss_media_get_digit_num(int32_t value)
 {
-    int32_t digit_num = 1;
+    int16_t digit_num = 1;
     do {
         value = value / 10;
         digit_num++;
@@ -11,12 +11,12 @@ static int32_t get_digit_num(int32_t value)
 }
 
 
-static char *create_new_ts_file_name(
+static char *oss_media_create_new_ts_file_name(
         const oss_media_ts_stream_option_t *option,
         oss_media_ts_stream_t *stream)
 {
         
-    int32_t pos_digit_num = get_digit_num(stream->ts_file_index);
+    int16_t pos_digit_num = oss_media_get_digit_num(stream->ts_file_index);
     char pos_str[pos_digit_num + 1];
     sprintf(pos_str, "%d", stream->ts_file_index++);
     
@@ -38,7 +38,7 @@ int oss_media_ts_stream_open(auth_fn_t auth_func,
 
     aos_pool_create(&(*stream)->pool, NULL);
 
-    char *ts_file_name = create_new_ts_file_name(option, *stream);
+    char *ts_file_name = oss_media_create_new_ts_file_name(option, *stream);
     int ret = oss_media_ts_open(option->bucket_name, ts_file_name,
                                 auth_func, &((*stream)->ts_file));
     if (ret != 0) {
@@ -86,8 +86,8 @@ int oss_media_ts_stream_open(auth_fn_t auth_func,
     return 0;
 }
 
-static char* create_ts_full_url(aos_pool_t *pool,
-                                oss_media_file_t *file) 
+static char* oss_media_create_ts_full_url(aos_pool_t *pool,
+        oss_media_file_t *file) 
 {
     oss_config_t config;
     aos_str_set(&config.endpoint, file->endpoint);
@@ -116,19 +116,32 @@ static char* create_ts_full_url(aos_pool_t *pool,
                         strlen(req.uri), req.uri);
 }
 
-static int write_m3u8(float duration,
-                      oss_media_ts_stream_t *stream)
+static void oss_media_set_m3u8_info(int32_t pos, 
+                                    float duration, 
+                                    oss_media_ts_stream_t *stream) 
+{
+    aos_pool_t *sub_pool;
+    aos_pool_create(&sub_pool, stream->pool);
+    char *ts_url = oss_media_create_ts_full_url(sub_pool, stream->ts_file->file);
+    memcpy(stream->m3u8_infos[pos].url, ts_url, strlen(ts_url) + 1);
+    aos_pool_destroy(sub_pool);
+    
+    stream->m3u8_infos[pos].duration = duration;
+}
+
+static int oss_media_write_m3u8(float duration,
+                                oss_media_ts_stream_t *stream)
 {
     int i;
     int ret;
-    int pos;
+    int32_t pos;
     int32_t cur_m3u8_count;
-
+    
     if (stream->option->is_live) {
         int32_t hls_list_size = stream->option->hls_list_size;
         cur_m3u8_count = hls_list_size > stream->ts_file_index ? 
                          stream->ts_file_index : hls_list_size;
-
+        
         oss_media_ts_begin_m3u8(stream->option->hls_time,
                                 stream->ts_file_index - cur_m3u8_count,
                                 stream->m3u8_file);
@@ -150,18 +163,11 @@ static int write_m3u8(float duration,
     }
 
     pos = cur_m3u8_count - 1;
-
-    aos_pool_t *sub_pool;
-    aos_pool_create(&sub_pool, stream->pool);
-    char *ts_url = create_ts_full_url(sub_pool, stream->ts_file->file);
-    memcpy(stream->m3u8_infos[pos].url, ts_url, strlen(ts_url) + 1);
-    aos_pool_destroy(sub_pool);
-
-    stream->m3u8_infos[pos].duration = duration;
+    oss_media_set_m3u8_info(pos, duration, stream);
     
     ret = oss_media_ts_write_m3u8(cur_m3u8_count, stream->m3u8_infos, 
                                   stream->m3u8_file);
-
+    
     return ret;
 }
 
@@ -179,7 +185,7 @@ static int close_and_open_new_file(oss_media_ts_stream_t *stream) {
     }
 
     // open next ts file
-    char *ts_file_name = create_new_ts_file_name(stream->option, stream);
+    char *ts_file_name = oss_media_create_new_ts_file_name(stream->option, stream);
     ret = oss_media_ts_open(stream->option->bucket_name, ts_file_name,
                             auth_func, &stream->ts_file);
     if (ret != 0) {
@@ -187,8 +193,6 @@ static int close_and_open_new_file(oss_media_ts_stream_t *stream) {
         return -1;
     }
     stream->current_file_begin_pts = -1;
-    // stream->video_frame->key = 1;
-    // stream->audio_frame->key = 1;    
 
     return 0;
 }
@@ -202,7 +206,7 @@ static int oss_media_ts_stream_flush(float duration,
     oss_media_ts_flush(stream->ts_file);
         
     // write m3u8 index
-    ret = write_m3u8(duration, stream);
+    ret = oss_media_write_m3u8(duration, stream);
     if (ret != 0) {
         aos_error_log("write m3u8 file failed.", stream->option->m3u8_name);
         return ret;
@@ -211,8 +215,9 @@ static int oss_media_ts_stream_flush(float duration,
     return 0;
 }
 
-static int need_flush(float duration, int32_t hls_time,
-                      oss_media_ts_frame_t *frame)
+static int oss_media_need_flush(float duration, 
+                                int32_t hls_time,
+                                oss_media_ts_frame_t *frame)
 {
     if (duration < hls_time) {
         return 0;
@@ -223,18 +228,17 @@ static int need_flush(float duration, int32_t hls_time,
     }
 
     return 1;
-    //return frame->frame_type == ft_idr;
 }
 
-static int write_stream_frame(oss_media_ts_frame_t *frame,
-                              oss_media_ts_stream_t *stream)
+static int oss_media_write_stream_frame(oss_media_ts_frame_t *frame,
+                                        oss_media_ts_stream_t *stream)
 {
     if (stream->current_file_begin_pts == -1) {
         stream->current_file_begin_pts = frame->pts;
     }
 
     float duration = (frame->pts - stream->current_file_begin_pts) / 90000.0;
-    if (need_flush(duration, stream->option->hls_time, frame))
+    if (oss_media_need_flush(duration, stream->option->hls_time, frame))
     {
         if(0 != oss_media_ts_stream_flush(duration, stream)) {
             aos_error_log("flush stream data failed.");
@@ -255,11 +259,11 @@ static int write_stream_frame(oss_media_ts_frame_t *frame,
     return 0;
 }
 
-static int extract_frame(uint8_t *buf, 
-                         int64_t last_pos, 
-                         int64_t cur_pos, 
-                         uint64_t inc_pts,
-                         oss_media_ts_frame_t *frame)
+static int oss_media_extract_frame(uint8_t *buf, 
+                                   int64_t last_pos, 
+                                   int64_t cur_pos, 
+                                   uint64_t inc_pts,
+                                   oss_media_ts_frame_t *frame)
 {
     if (last_pos != -1 && cur_pos > last_pos) {
         frame->pts += inc_pts;
@@ -272,13 +276,13 @@ static int extract_frame(uint8_t *buf,
     return 0;
 }
 
-static int get_video_frame(uint8_t *buf, uint64_t len,
-                           oss_media_ts_stream_t *stream)
+static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
+                                     oss_media_ts_stream_t *stream)
 {
     int i = 0;
-    int cur_pos = -1;
-    int last_pos = -1;
-    uint64_t inc_pts = 0;
+    int64_t cur_pos = -1;
+    int64_t last_pos = -1;
+    int64_t inc_pts = 0;
     oss_media_ts_frame_t *frame = stream->video_frame;
 
     if (len <= 0) {
@@ -299,35 +303,34 @@ static int get_video_frame(uint8_t *buf, uint64_t len,
             && buf[i+2] == 0x00 && buf[i+3] == 0x01)
         {
             cur_pos = i;
-            //frame->frame_type = buf[i+4] & 0x1F;
         }
 
-        if (extract_frame(buf, last_pos, cur_pos, inc_pts, frame)) {
+        if (oss_media_extract_frame(buf, last_pos, cur_pos, inc_pts, frame)) {
             return 1;
         }
     }
 
-    if (extract_frame(buf, last_pos, len, inc_pts, frame)) {
+    if (oss_media_extract_frame(buf, last_pos, len, inc_pts, frame)) {
         return 1;
     }
 
     return 0;
 }
 
-static int get_samples_per_frame(const oss_media_ts_stream_t *stream) 
+static int oss_media_get_samples_per_frame(const oss_media_ts_stream_t *stream) 
 {
     return stream->audio_frame->stream_type == st_mp3 ? 
         OSS_MEDIA_MP3_SAMPLE_RATE : OSS_MEDIA_AAC_SAMPLE_RATE;
 }
 
 
-static int get_audio_frame(uint8_t *buf, uint64_t len, 
-                           oss_media_ts_stream_t *stream)
+static int oss_media_get_audio_frame(uint8_t *buf, uint64_t len, 
+                                     oss_media_ts_stream_t *stream)
 {
     int i = 0;
-    int cur_pos = -1;
-    int last_pos = -1;
-    uint64_t inc_pts = 0;
+    int64_t cur_pos = -1;
+    int64_t last_pos = -1;
+    int64_t inc_pts = 0;
     int samples_per_frame = 0;
     oss_media_ts_frame_t *frame = NULL;
 
@@ -344,27 +347,27 @@ static int get_audio_frame(uint8_t *buf, uint64_t len,
     }
 
     last_pos = frame->pos - buf;
-    samples_per_frame = get_samples_per_frame(stream);
+    samples_per_frame = oss_media_get_samples_per_frame(stream);
     inc_pts = (90000 * samples_per_frame) / stream->option->audio_sample_rate;
-
+    
     for (i = frame->end - buf; i < len - 1; i++) {
         if (buf[i] == 0xFF && (buf[i+1] & 0xF0) == 0xF0)
         {
             cur_pos = i;
         }
 
-        if (extract_frame(buf, last_pos, cur_pos, inc_pts, frame)) {
+        if (oss_media_extract_frame(buf, last_pos, cur_pos, inc_pts, frame)) {
             return 1;
         }
     }
 
-    if (extract_frame(buf, last_pos, len, inc_pts, frame)) {
+    if (oss_media_extract_frame(buf, last_pos, len, inc_pts, frame)) {
         return 1;
     }
     return 0;
 }
 
-static void sync_pts_dts(oss_media_ts_stream_t *stream)
+static void oss_media_sync_pts_dts(oss_media_ts_stream_t *stream)
 {
     if (stream->video_frame->pts <= stream->audio_frame->pts) {
         stream->video_frame->pts = stream->audio_frame->pts;
@@ -386,27 +389,27 @@ int oss_media_ts_stream_write(uint8_t *video_buf,
     stream->audio_frame->end = audio_buf;
     stream->audio_frame->pos = audio_buf;
 
-    sync_pts_dts(stream);
+    oss_media_sync_pts_dts(stream);
 
     while (1)
     {
         int ret;
-        int get_video_ret = get_video_frame(video_buf, video_len, stream);
-        int get_audio_ret = get_audio_frame(audio_buf, audio_len, stream);
+        int get_video_ret = oss_media_get_video_frame(video_buf, video_len, stream);
+        int get_audio_ret = oss_media_get_audio_frame(audio_buf, audio_len, stream);
 
         if (get_video_ret && get_audio_ret) {
             if (stream->video_frame->pts < stream->audio_frame->pts) {
-                ret = write_stream_frame(stream->video_frame, stream);
+                ret = oss_media_write_stream_frame(stream->video_frame, stream);
             } else if (stream->video_frame->pts == stream->audio_frame->pts) {
-                ret = write_stream_frame(stream->video_frame, stream);
-                ret = ret && write_stream_frame(stream->audio_frame, stream);
+                ret = oss_media_write_stream_frame(stream->video_frame, stream);
+                ret = ret && oss_media_write_stream_frame(stream->audio_frame, stream);
             } else {
-                ret = write_stream_frame(stream->audio_frame, stream);
+                ret = oss_media_write_stream_frame(stream->audio_frame, stream);
             }
         } else if (get_video_ret && !get_audio_ret) {
-            ret = write_stream_frame(stream->video_frame, stream);
+            ret = oss_media_write_stream_frame(stream->video_frame, stream);
         } else if (!get_video_ret && get_audio_ret) {
-            ret = write_stream_frame(stream->audio_frame, stream);
+            ret = oss_media_write_stream_frame(stream->audio_frame, stream);
         } else {
             break;
         }

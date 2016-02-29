@@ -12,16 +12,19 @@
 #define OSS_MEDIA_TS_ENCRYPT_PACKET_LENGTH 16
 
 #define OSS_MEDIA_M3U8_URL_LENGTH 256
-/**
- *  this struct describes the memory buffer.
- */
 
+/**
+ *  this enum describes the stream type.
+ */
 typedef enum {
     st_h264,
     st_aac,
     st_mp3
 } stream_type_t;
 
+/**
+ *  this enum describes the frame type.
+ */
 typedef enum {
     ft_unspecified = 0,
     ft_non_idr = 1,
@@ -47,21 +50,22 @@ typedef struct oss_media_ts_frame_s {
 } oss_media_ts_frame_t;
 
 /**
- *  this struct describes the m3u8 infomation.
+ *  this typedef define the file_handler_fn_t.
  */
-
 struct oss_media_ts_file_s;
 typedef int (*file_handler_fn_t) (struct oss_media_ts_file_s *file);
 
+/**
+ *  this struct describes the m3u8 infomation.
+ */
 typedef struct oss_media_ts_m3u8_info_s {
     float duration;
     char url[OSS_MEDIA_M3U8_URL_LENGTH];
 } oss_media_ts_m3u8_info_t;
 
 /**
- *  ts process context.
-*/
-
+ *  this struct describes the ts options.
+ */
 typedef struct oss_media_ts_option_s {
     uint16_t video_pid;
     uint16_t audio_pid;
@@ -72,6 +76,9 @@ typedef struct oss_media_ts_option_s {
     uint16_t pat_interval_frame_count;
 } oss_media_ts_option_t;
 
+/**
+ *  this struct describes the memory buffer.
+ */
 typedef struct oss_media_mpegts_buf_s {
     uint8_t *buf;
     unsigned int pos;
@@ -79,6 +86,9 @@ typedef struct oss_media_mpegts_buf_s {
     unsigned int end;
 } oss_media_ts_buf_t;
 
+/**
+ *  this struct describes the ts file.
+ */
 typedef struct oss_media_ts_file_s {
     oss_media_file_t *file;
     oss_media_ts_buf_t *buffer;
@@ -87,7 +97,7 @@ typedef struct oss_media_ts_file_s {
 } oss_media_ts_file_t;
 
 /**
- *  open ts context.
+ *  open ts file.
  *
  *  return values:
  *      upon successful completion 0 is returned
@@ -109,33 +119,52 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
                              oss_media_ts_file_t *file);
 
 /**
+ *  write m3u8 head infomation.
+ *
+ *  return values:
+ *      upon successful completion 0 is returned
+ *      otherwise -1 is returned
+ */
+void oss_media_ts_begin_m3u8(int32_t max_duration, 
+                             int32_t sequence,
+                             oss_media_ts_file_t *file);
+
+/**
  *  write m3u8 infomation.
  *
  *  return values:
  *      upon successful completion 0 is returned
  *      otherwise -1 is returned
  */
-
-void oss_media_ts_begin_m3u8(int32_t max_duration, 
-                             int32_t sequence,
-                             oss_media_ts_file_t *file);
-
 int oss_media_ts_write_m3u8(int size,
                             oss_media_ts_m3u8_info_t m3u8[],
                             oss_media_ts_file_t *file);
 
+/**
+ *  write m3u8 end infomation for vod
+ *
+ *  return values:
+ *      upon successful completion 0 is returned
+ *      otherwise -1 is returned
+ */
 void oss_media_ts_end_m3u8(oss_media_ts_file_t *file);
 
 /**
- *  close ts context.
+ *  flush ts data to oss.
+ *
+ *  return values:
+ *      upon successful completion 0 is returned
+ *      otherwise -1 is returned
+ */
+int oss_media_ts_flush(oss_media_ts_file_t *file);
+
+/**
+ *  close ts file.
  *
  *  return values:
  *      upon successful completion 0 is returned
  *      otherwise -1 is returned
  */
 int oss_media_ts_close(oss_media_ts_file_t *file);
-
-int oss_media_ts_flush(oss_media_ts_file_t *file);
-
 
 #endif

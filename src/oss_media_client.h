@@ -19,6 +19,9 @@ typedef struct {
     char    *type;
 } oss_media_file_stat_t;
 
+/**
+ *  this typedef define the auth_fn_t.
+ */
 struct oss_media_file_s;
 typedef void (*auth_fn_t)(struct oss_media_file_s *file);
 
@@ -55,15 +58,17 @@ void oss_media_destroy();
 
 /**
  *  @brief  open oss media file, this function opens the oss media file.
+ *  @param[in]  bucket_name the bucket name for store file in oss
+ *  @param[in]  object_key the object name for oss file
  *  @param[in]  param mode:
  *      'r': file access mode of read.
  *      'w': file access mode of write.
  *      'a': file access mode of append.
  *      notes: combined access mode is not allowd.
+ *  @param[in]  auth_func the func to set access_key_id/access_key_secret
  *  @return:
  *      upon successful completion 0 is returned.
- *      otherwise, -1 is returned and code/messaage in struct of file is set to indicate the error.
- *  
+ *      otherwise, -1 is returned and code/messaage in struct of file is set to indicate the error. 
  */
 oss_media_file_t* oss_media_file_open(char *bucket_name,
                                       char *object_key,
