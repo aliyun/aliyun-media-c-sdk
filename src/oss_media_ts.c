@@ -326,6 +326,8 @@ int oss_media_ts_open(char *bucket_name,
     (*file)->file = oss_media_file_open(bucket_name, object_key, "a", auth_func);
     if ((*file)->file == NULL) {
         aos_error_log("open oss media file failed.");
+        free(*file);
+        *file = NULL;
         return -1;
     }
 
@@ -518,11 +520,7 @@ int oss_media_ts_write_m3u8(int size,
         file->buffer->pos += len;
     }
     
-    if (oss_media_ts_flush(file) != 0) {
-        return -1;
-    }
-
-    return 0;
+    return oss_media_ts_flush(file);
 }
 
 int oss_media_ts_flush(oss_media_ts_file_t *file) {
@@ -530,6 +528,10 @@ int oss_media_ts_flush(oss_media_ts_file_t *file) {
 }
 
 int oss_media_ts_close(oss_media_ts_file_t *file) {
+    if (NULL == file) {
+        return 0;
+    }
+    
     if (oss_media_ts_flush(file) != 0) {
         aos_error_log("flush file[%s] failed.", file->file->object_key);
         return -1;

@@ -2,7 +2,7 @@
 
 static int16_t oss_media_get_digit_num(int32_t value)
 {
-    int16_t digit_num = 1;
+    int16_t digit_num = 0;
     do {
         value = value / 10;
         digit_num++;
@@ -68,8 +68,8 @@ int oss_media_ts_stream_open(auth_fn_t auth_func,
     (*stream)->video_frame->stream_type = st_h264;
     (*stream)->video_frame->continuity_counter = 1;
     (*stream)->video_frame->key = 1;
-    (*stream)->video_frame->pts = 1000;
-    (*stream)->video_frame->dts = 1000;
+    (*stream)->video_frame->pts = 5000;
+    (*stream)->video_frame->dts = 5000;
     (*stream)->video_frame->pos = NULL;
     (*stream)->video_frame->end = NULL;
 
@@ -78,8 +78,8 @@ int oss_media_ts_stream_open(auth_fn_t auth_func,
     (*stream)->audio_frame->stream_type = st_aac;
     (*stream)->audio_frame->continuity_counter = 1;
     (*stream)->audio_frame->key = 1;
-    (*stream)->audio_frame->pts = 1000;
-    (*stream)->audio_frame->dts = 1000;
+    (*stream)->audio_frame->pts = 5000;
+    (*stream)->audio_frame->dts = 5000;
     (*stream)->audio_frame->pos = NULL;
     (*stream)->audio_frame->end = NULL;
 
@@ -116,9 +116,9 @@ static char* oss_media_create_ts_full_url(aos_pool_t *pool,
                         strlen(req.uri), req.uri);
 }
 
-static void oss_media_set_m3u8_info(int32_t pos, 
-                                    float duration, 
-                                    oss_media_ts_stream_t *stream) 
+static void oss_media_set_m3u8_info(int32_t pos,
+                                    float duration,
+                                    oss_media_ts_stream_t *stream)
 {
     aos_pool_t *sub_pool;
     aos_pool_create(&sub_pool, stream->pool);
@@ -145,7 +145,7 @@ static int oss_media_write_m3u8(float duration,
         oss_media_ts_begin_m3u8(stream->option->hls_time,
                                 stream->ts_file_index - cur_m3u8_count,
                                 stream->m3u8_file);
-
+        
         if (stream->ts_file_index > hls_list_size) {
             for (i = 0; i < hls_list_size - 1; i++) {
                 stream->m3u8_infos[i].duration = stream->m3u8_infos[i + 1].duration;
@@ -155,7 +155,7 @@ static int oss_media_write_m3u8(float duration,
         }
     } else {
         if (stream->m3u8_file->file->_stat.length == 0) {
-            oss_media_ts_begin_m3u8(stream->option->hls_time, 0, 
+            oss_media_ts_begin_m3u8(stream->option->hls_time, 0,
                     stream->m3u8_file);
         }
 
@@ -165,10 +165,8 @@ static int oss_media_write_m3u8(float duration,
     pos = cur_m3u8_count - 1;
     oss_media_set_m3u8_info(pos, duration, stream);
     
-    ret = oss_media_ts_write_m3u8(cur_m3u8_count, stream->m3u8_infos, 
-                                  stream->m3u8_file);
-    
-    return ret;
+    return oss_media_ts_write_m3u8(cur_m3u8_count, stream->m3u8_infos,
+                                   stream->m3u8_file);
 }
 
 static int close_and_open_new_file(oss_media_ts_stream_t *stream) {
