@@ -122,7 +122,7 @@ static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
     // write data to oss when buffer is full
     if (0 != oss_media_handle_file(file)) {
         aos_error_log("execute handler func failed.");
-        return -1;        
+        return -1;
     }
 
     // init pos parameter
@@ -178,7 +178,7 @@ static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
     // write data to oss when buffer is full
     if (0 != oss_media_handle_file(file)) {
         aos_error_log("execute handler func failed.");
-        return -1;        
+        return -1;
     }
 
     // init pos parameter
@@ -232,7 +232,7 @@ static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
         *p++ = (reserved_5 << 5) | ((elementary_pid >> 8) & 0x1F);
         *p++ = elementary_pid & 0xFF;
         *p++ = (reserved_6 << 4) | ((ES_info_length >> 4) & 0x0F);
-        *p++ = ES_info_length & 0xFF;                
+        *p++ = ES_info_length & 0xFF;
     }
 
     // set audio stream info
@@ -247,7 +247,7 @@ static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
         *p++ = (reserved_5 << 5) | ((elementary_pid >> 8) & 0x1F);
         *p++ = elementary_pid & 0xFF;
         *p++ = (reserved_6 << 4) | ((ES_info_length >> 4) & 0x0F);
-        *p++ = ES_info_length & 0xFF;                
+        *p++ = ES_info_length & 0xFF;
     }
     
     // set CRC32
@@ -359,12 +359,12 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
     uint8_t  packet[OSS_MEDIA_TS_PACKET_SIZE], *p, *base;
     uint32_t first;
     uint32_t pid;
-
+    
     // write pat and pmt table
     if (oss_media_ts_need_write_pat_and_pmt(file)) {
         oss_media_ts_write_pat_and_pmt(file);
     }
-
+    
     // get pid
     if (frame->stream_type == st_h264) {
         pid = file->options.video_pid;
@@ -372,7 +372,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
         pid = file->options.audio_pid;
     } else {
         aos_error_log("stream type[%d] is not support", frame->stream_type);
-        return -1;      
+        return -1;
     }
 
     first = 1;
@@ -381,7 +381,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
         // flush if buffer is full.
         if (0 != oss_media_handle_file(file)) {
             aos_error_log("execute handler func failed.");
-            return -1;        
+            return -1;
         }
 
         p = packet;
@@ -510,11 +510,12 @@ int oss_media_ts_write_m3u8(int size,
                             oss_media_ts_file_t *file)
 {
     int i;
+    int len;
     for (i = 0;i < size; i++) {
         char item[256 + 32];
-        sprintf(item, "#EXTINF:%.3f,\n%s\n", m3u8[i].duration, m3u8[i].url);
-        memcpy(&file->buffer->buf[file->buffer->pos], item, strlen(item));
-        file->buffer->pos += strlen(item);
+        len = sprintf(item, "#EXTINF:%.3f,\n%s\n", m3u8[i].duration, m3u8[i].url);
+        memcpy(&file->buffer->buf[file->buffer->pos], item, len);
+        file->buffer->pos += len;
     }
     
     if (oss_media_ts_flush(file) != 0) {
@@ -540,7 +541,6 @@ int oss_media_ts_close(oss_media_ts_file_t *file) {
     free(file->buffer);
 
     free(file);
-    file = NULL;
 
     return 0;
 }

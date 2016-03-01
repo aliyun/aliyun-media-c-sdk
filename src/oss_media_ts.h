@@ -40,7 +40,6 @@ typedef enum {
  */
 typedef struct oss_media_ts_frame_s {
     stream_type_t stream_type;
-    frame_type_t frame_type;
     uint64_t pts;
     uint64_t dts;
     uint32_t continuity_counter;
@@ -71,7 +70,7 @@ typedef struct oss_media_ts_option_s {
     uint16_t audio_pid;
     uint32_t hls_delay_ms;
     uint8_t encrypt:1;
-    char    key[OSS_MEDIA_TS_ENCRYPT_KEY_SIZE];    
+    char    key[OSS_MEDIA_TS_ENCRYPT_KEY_SIZE];
     file_handler_fn_t handler_func;
     uint16_t pat_interval_frame_count;
 } oss_media_ts_option_t;

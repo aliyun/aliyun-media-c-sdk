@@ -4,9 +4,9 @@
 #include "src/oss_media_client.h"
 #include <oss_c_sdk/aos_define.h>
 
-static int64_t write_file(const char* content);
+int64_t write_file(const char* content);
+void delete_file(oss_media_file_t *file);
 static void auth_func(oss_media_file_t *file);
-static void delete_file(oss_media_file_t *file);
 
 void test_client_setup(CuTest *tc) {
     aos_pool_t *p;
@@ -508,25 +508,6 @@ void test_open_file_failed_with_wrong_flag(CuTest *tc) {
     CuAssertTrue(tc, NULL == file);
 }
 
-static int64_t write_file(const char* content) {
-    int ret;
-    int64_t write_size = 0;
-    oss_media_file_t *file = NULL;
-
-    // open file for write
-    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "w", auth_func);
-    if (NULL == file)
-        return -1;
-
-    // write file
-    write_size = oss_media_file_write(file, content, strlen(content));
-
-    // close file
-    oss_media_file_close(file);
-
-    return write_size;
-}
-
 static void auth_func(oss_media_file_t *file) {
     file->endpoint = TEST_OSS_ENDPOINT;
     file->is_cname = 0;
@@ -538,7 +519,26 @@ static void auth_func(oss_media_file_t *file) {
     file->expiration = time(NULL) + 300;
 }
 
-static void delete_file(oss_media_file_t *file) {
+int64_t write_file(const char* content) {
+    int ret;
+    int64_t write_size = 0;
+    oss_media_file_t *file = NULL;
+
+    // open file for write
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "w", auth_func);
+    if (NULL == file)
+        return -1;
+
+    // write file
+    write_size = oss_media_file_write(file, content, strlen(content));
+    
+    // close file
+    oss_media_file_close(file);
+
+    return write_size;
+}
+
+void delete_file(oss_media_file_t *file) {
     aos_pool_t *p;
     aos_string_t bucket;
     aos_string_t object;
