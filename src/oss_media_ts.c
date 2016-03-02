@@ -524,7 +524,10 @@ int oss_media_ts_write_m3u8(int size,
 }
 
 int oss_media_ts_flush(oss_media_ts_file_t *file) {
-    return file->options.handler_func(file);
+    if (file->options.handler_func(file) != 0) {
+        return -1;
+    }
+    return 0;
 }
 
 int oss_media_ts_close(oss_media_ts_file_t *file) {

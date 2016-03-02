@@ -151,6 +151,7 @@ void test_get_bucket_lifecycle_succeeded(CuTest *tc) {
 
     rules = oss_media_create_lifecycle_rules(0);
 
+    sleep(1);
     ret = oss_media_get_bucket_lifecycle(&config, TEST_BUCKET_NAME, rules);
     CuAssertIntEquals(tc, 0, ret);
 
@@ -271,6 +272,12 @@ void test_list_files_succeeded(CuTest *tc) {
 
     CuAssertIntEquals(tc, 0, ret);   
 
+    ret = oss_media_delete_file(&config, TEST_BUCKET_NAME, file1);
+    CuAssertIntEquals(tc, 0, ret);
+
+    ret = oss_media_delete_file(&config, TEST_BUCKET_NAME, file2);
+    CuAssertIntEquals(tc, 0, ret);
+
     CuAssertStrEquals(tc, NULL, file_list->path);
     CuAssertStrEquals(tc, NULL, file_list->marker);
     CuAssertIntEquals(tc, 0, file_list->max_size);
@@ -278,12 +285,6 @@ void test_list_files_succeeded(CuTest *tc) {
     CuAssertIntEquals(tc, 2, file_list->size);
     CuAssertStrEquals(tc, file1, file_list->file_names[0]);
     CuAssertStrEquals(tc, file2, file_list->file_names[1]);
-
-    ret = oss_media_delete_file(&config, TEST_BUCKET_NAME, file1);
-    CuAssertIntEquals(tc, 0, ret);
-
-    ret = oss_media_delete_file(&config, TEST_BUCKET_NAME, file2);
-    CuAssertIntEquals(tc, 0, ret);
 
     oss_media_free_files(file_list);
 }

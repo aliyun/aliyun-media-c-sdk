@@ -4,8 +4,8 @@
 #include "src/oss_media_ts.c"
 #include <oss_c_sdk/aos_define.h>
 
+extern void delete_file(oss_media_file_t *file);
 static void auth_func(oss_media_file_t *file);
-static void delete_file(oss_media_file_t *file);
 static int oss_media_ts_fake_handler(oss_media_ts_file_t *file);
 
 void test_ts_setup(CuTest *tc) {
@@ -436,6 +436,7 @@ void test_oss_media_ts_ossfile_handler_succeeded(CuTest *tc) {
     CuAssertIntEquals(tc, strlen(content), length);
     CuAssertStrnEquals(tc, content, strlen(content), (char*)buffer);
 
+    delete_file(read_file);
     oss_media_file_close(read_file);
 }
 
@@ -575,6 +576,8 @@ void test_oss_media_ts_end_m3u8(CuTest *tc) {
     char *result = &file->buffer->buf[file->buffer->start];
     CuAssertStrnEquals(tc, expected, strlen(expected), result);
 
+    oss_media_ts_flush(file);
+    delete_file(file->file);
     oss_media_ts_close(file);
 }
 
@@ -670,7 +673,7 @@ void test_oss_media_ts_close_succeeded(CuTest *tc) {
     int ret = 0;
 
     oss_media_ts_file_t *file;
-    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key.ts", auth_func, &file);
+    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key1.ts", auth_func, &file);
     CuAssertIntEquals(tc, 0, ret);
 
     file->options.handler_func = oss_media_ts_fake_handler;
@@ -685,7 +688,7 @@ void test_oss_media_ts_write_frame_with_unsupport_stream_type(CuTest *tc) {
     int ret = 0;
 
     oss_media_ts_file_t *file;
-    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key.ts", auth_func, &file);
+    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key2.ts", auth_func, &file);
     CuAssertIntEquals(tc, 0, ret);
 
     oss_media_ts_frame_t frame;
@@ -694,6 +697,8 @@ void test_oss_media_ts_write_frame_with_unsupport_stream_type(CuTest *tc) {
     ret = oss_media_ts_write_frame(&frame, file);
     CuAssertIntEquals(tc, -1, ret);
 
+    oss_media_ts_flush(file);
+    delete_file(file->file);
     oss_media_ts_close(file);
 }
 
@@ -701,7 +706,7 @@ void test_oss_media_ts_write_frame_with_handle_file_failed(CuTest *tc) {
     int ret = 0;
 
     oss_media_ts_file_t *file;
-    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key.ts", auth_func, &file);
+    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key3.ts", auth_func, &file);
     CuAssertIntEquals(tc, 0, ret);
 
     uint8_t *buf = (uint8_t*)malloc(1024);
@@ -731,7 +736,7 @@ void test_oss_media_ts_write_frame_with_h264(CuTest *tc) {
     int ret = 0;
 
     oss_media_ts_file_t *file;
-    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key.ts", auth_func, &file);
+    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key4.ts", auth_func, &file);
     CuAssertIntEquals(tc, 0, ret);
 
     uint8_t buf[] = {0x00, 0x00, 0x00, 0x01, 0x68, 0xee, 0x38, 0x30};
@@ -803,6 +808,9 @@ void test_oss_media_ts_write_frame_with_h264(CuTest *tc) {
     }
 
     CuAssertIntEquals(tc, 1, file->frame_count);
+
+    oss_media_ts_flush(file);
+    delete_file(file->file);
     oss_media_ts_close(file);
 }
 
@@ -814,7 +822,7 @@ void test_oss_media_ts_write_frame_with_aac(CuTest *tc) {
     int ret = 0;
 
     oss_media_ts_file_t *file;
-    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key.ts", auth_func, &file);
+    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key5.ts", auth_func, &file);
     CuAssertIntEquals(tc, 0, ret);
 
     file->frame_count = 1; // disable and pat/pmt table
@@ -857,6 +865,9 @@ void test_oss_media_ts_write_frame_with_aac(CuTest *tc) {
     }
 
     CuAssertIntEquals(tc, 2, file->frame_count);
+
+    oss_media_ts_flush(file);
+    delete_file(file->file);
     oss_media_ts_close(file);
 }
 
@@ -866,7 +877,7 @@ void test_oss_media_ts_write_frame_with_pes_overflow(CuTest *tc) {
     int data_len = 0xffff + 1;
 
     oss_media_ts_file_t *file;
-    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key.ts", auth_func, &file);
+    ret = oss_media_ts_open(TEST_BUCKET_NAME, "key6.ts", auth_func, &file);
     CuAssertIntEquals(tc, 0, ret);
 
     uint8_t buf[data_len];
@@ -917,6 +928,9 @@ void test_oss_media_ts_write_frame_with_pes_overflow(CuTest *tc) {
     }
 
     CuAssertIntEquals(tc, 1, file->frame_count);
+
+    oss_media_ts_flush(file);
+    delete_file(file->file);
     oss_media_ts_close(file);
 }
 

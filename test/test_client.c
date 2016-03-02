@@ -66,16 +66,17 @@ void test_append_file_succeeded(CuTest *tc) {
     content = "hello oss media file\n";
 
     // open file
-    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "a", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file.txt", 
+                               "a", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // write file
     write_size = oss_media_file_write(file, content, strlen(content));
-    CuAssertIntEquals(tc, write_size, strlen(content));
+    CuAssertIntEquals(tc, strlen(content), write_size);
 
     // write file
     write_size = oss_media_file_write(file, content, strlen(content));
-    CuAssertIntEquals(tc, write_size, strlen(content));
+    CuAssertIntEquals(tc, strlen(content), write_size);
 
     ret = oss_media_file_stat(file, &stat);
     CuAssertIntEquals(tc, 0, ret);
@@ -149,7 +150,8 @@ void test_write_file_with_normal_cover_appendable(CuTest *tc) {
     content = "hello oss media file\n";
 
     // open file
-    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "a", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file.txt", 
+                               "a", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     // write file
@@ -160,7 +162,8 @@ void test_write_file_with_normal_cover_appendable(CuTest *tc) {
     oss_media_file_close(file);
 
     // open file
-    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "w", auth_func);
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file.txt", 
+                               "w", auth_func);
     CuAssertTrue(tc, NULL != file);
 
     write_size = oss_media_file_write(file, content, strlen(content) - 2);
