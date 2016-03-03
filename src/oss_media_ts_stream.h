@@ -36,14 +36,12 @@ typedef struct oss_media_ts_stream_s {
  *  @brief  open oss media ts stream, this function opens the oss ts stream.
  *  @param[in]  auth_func the func to set access_key_id/access_key_secret
  *  @param[in]  options the option of describes oss ts stream
- *  @param[out] stream the ts stream
  *  @return:
- *      upon successful completion 0 is returned.
- *      otherwise, -1 is returned and code/messaage in struct of file is set to indicate the error. 
+ *      On success, a pointer to the oss_media_ts_stream_t
+ *      otherwise, a null pointer is returned
  */
-int oss_media_ts_stream_open(auth_fn_t auth_func,
-                             const oss_media_ts_stream_option_t *options,
-                             oss_media_ts_stream_t **stream);
+oss_media_ts_stream_t* oss_media_ts_stream_open(auth_fn_t auth_func,
+        const oss_media_ts_stream_option_t *options);
 
 /**
  *  @brief  write h.264 and aac data

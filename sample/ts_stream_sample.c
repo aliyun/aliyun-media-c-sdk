@@ -32,8 +32,8 @@ static void write_only_video_vod() {
     option.video_frame_rate = 30;
     option.hls_time = 5;
     
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    if (ret != 0) {
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    if (stream == NULL) {
         printf("open ts stream failed.\n");
         return;
     }
@@ -81,7 +81,8 @@ static void write_only_video_vod() {
         printf("close vod stream failed.\n");
         return;
     }
-
+    
+    free(h264_buf);
     printf("convert H.264 to TS vod succeeded\n");
 }
 
@@ -102,8 +103,8 @@ static void write_only_audio_vod() {
     option.audio_sample_rate = 24000;
     option.hls_time = 5;
     
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    if (ret != 0) {
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    if (stream == NULL) {
         printf("open ts stream failed.\n");
         return;
     }
@@ -152,6 +153,7 @@ static void write_only_audio_vod() {
         return;
     }
 
+    free(aac_buf);
     printf("convert aac to TS vod succeeded\n");
 }
 
@@ -173,8 +175,8 @@ static void write_video_audio_vod() {
     option.audio_sample_rate = 24000;
     option.hls_time = 5;
     
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    if (ret != 0) {
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    if (stream == NULL) {
         printf("open ts stream failed.\n");
         return;
     }
@@ -238,6 +240,8 @@ static void write_video_audio_vod() {
         return;
     }
 
+    free(h264_buf);
+    free(aac_buf);
     printf("convert H.264 and aac to TS vod succeeded\n");
 }
 
@@ -260,8 +264,8 @@ static void write_video_audio_live() {
     option.hls_time = 5;
     option.hls_list_size = 5;
     
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    if (ret != 0) {
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    if (stream == NULL) {
         printf("open ts stream failed.\n");
         return;
     }
@@ -305,6 +309,8 @@ static void write_video_audio_live() {
         return;
     }
 
+    free(h264_buf);
+    free(aac_buf);
     printf("convert H.264 and aac to TS live succeeded\n");
 }
 

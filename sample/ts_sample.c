@@ -64,9 +64,9 @@ static void write_ts() {
     int ret;
     oss_media_ts_file_t *file;
     
-    ret = oss_media_ts_open(SAMPLE_BUCKET_NAME, "oss_media_ts.ts", 
-                            auth_func, &file);
-    if (ret != 0) {
+    file = oss_media_ts_open(SAMPLE_BUCKET_NAME, "oss_media_ts.ts", 
+                             auth_func);
+    if (file == NULL) {
         printf("open ts file failed.");
         return;
     }
@@ -83,9 +83,9 @@ static void write_m3u8() {
     oss_media_ts_file_t *file;
     int ret;
 
-    ret = oss_media_ts_open(SAMPLE_BUCKET_NAME, "oss_media_ts.m3u8", 
-                            auth_func, &file);
-    if (ret != 0) {
+    file = oss_media_ts_open(SAMPLE_BUCKET_NAME, "oss_media_ts.m3u8", 
+                             auth_func);
+    if (file == NULL) {
         printf("open m3u8 file failed.");
         return;
     }

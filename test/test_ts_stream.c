@@ -46,8 +46,8 @@ void test_oss_media_ts_stream_open_with_vod(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
     CuAssertIntEquals(tc, 1, stream->ts_file_index);
     CuAssertIntEquals(tc, 0, stream->current_file_begin_pts + 1);
     CuAssertTrue(tc, NULL != stream->option);
@@ -86,8 +86,8 @@ void test_oss_media_ts_stream_open_with_live(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
     CuAssertIntEquals(tc, 1, stream->ts_file_index);
     CuAssertIntEquals(tc, 0, stream->current_file_begin_pts + 1);
     CuAssertTrue(tc, NULL != stream->option);
@@ -127,8 +127,8 @@ void test_oss_media_ts_stream_open_with_failed(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, -1, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream == NULL);
 }
 
 void test_oss_media_create_ts_full_url(CuTest *tc) {
@@ -182,8 +182,8 @@ void test_oss_media_set_m3u8_info(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->file->endpoint = "oss.abc.com";
     stream->ts_file->file->bucket_name = "bucket-1";
@@ -212,8 +212,8 @@ void test_oss_media_write_m3u8_for_vod(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->file->endpoint = "oss.abc.com";
     stream->ts_file->file->bucket_name = "bucket-1";
@@ -251,8 +251,8 @@ void test_oss_media_write_m3u8_for_live(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->file->endpoint = "oss.abc.com";
     stream->ts_file->file->bucket_name = "bucket-1";
@@ -316,8 +316,8 @@ void test_oss_media_write_m3u8_failed(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->m3u8_file->options.handler_func = oss_media_ts_fake_handler;
     stream->m3u8_file->frame_count = 1;
@@ -328,7 +328,7 @@ void test_oss_media_write_m3u8_failed(CuTest *tc) {
     stream->ts_file->file->endpoint = TEST_OSS_ENDPOINT;
     stream->ts_file->file->bucket_name = TEST_BUCKET_NAME;
     delete_file(stream->m3u8_file->file);
-    oss_media_ts_stream_close(stream);    
+    oss_media_ts_stream_close(stream);
 }
 
 void test_close_and_open_new_file_with_close_failed(CuTest *tc) {
@@ -343,20 +343,23 @@ void test_close_and_open_new_file_with_close_failed(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_ts_fake_handler;
     stream->ts_file->frame_count = 1;
 
+    stream->m3u8_file->options.handler_func = oss_media_ts_fake_handler;
+    stream->m3u8_file->frame_count = 0;
+
     ret = close_and_open_new_file(stream);
     CuAssertIntEquals(tc, -1, ret);
-    
+
     oss_media_ts_stream_close(stream);
 }
 
 void test_close_and_open_new_file_with_open_failed(CuTest *tc) {
-    char *bucket = malloc(strlen(TEST_BUCKET_NAME) + 1);
+    char *bucket = (char*)malloc(strlen(TEST_BUCKET_NAME) + 1);
     memcpy(bucket, TEST_BUCKET_NAME, strlen(TEST_BUCKET_NAME) + 1);
 
     oss_media_ts_stream_option_t option;
@@ -370,8 +373,8 @@ void test_close_and_open_new_file_with_open_failed(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_ts_fake_handler;
     stream->ts_file->frame_count = 0;
@@ -396,8 +399,8 @@ void test_close_and_open_new_file(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
     CuAssertStrEquals(tc, "dir/test5-0.ts", stream->ts_file->file->object_key);
 
     ret = close_and_open_new_file(stream);
@@ -422,15 +425,19 @@ void test_oss_media_ts_stream_flush_with_write_ts_failed(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_ts_fake_handler;
     stream->ts_file->frame_count = 1;
 
+    stream->m3u8_file->options.handler_func = oss_media_ts_fake_handler;
+    stream->m3u8_file->frame_count = 0;
+
     ret = oss_media_ts_stream_flush(1.2, stream);
     CuAssertIntEquals(tc, -1, ret);
-    
+
+    delete_file(stream->m3u8_file->file);    
     oss_media_ts_stream_close(stream);    
 }
 
@@ -446,8 +453,8 @@ void test_oss_media_ts_stream_flush_with_write_m3u8_failed(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_ts_fake_handler;
     stream->ts_file->frame_count = 0;
@@ -456,7 +463,8 @@ void test_oss_media_ts_stream_flush_with_write_m3u8_failed(CuTest *tc) {
 
     ret = oss_media_ts_stream_flush(1.2, stream);
     CuAssertIntEquals(tc, -1, ret);
-    
+
+    delete_file(stream->m3u8_file->file);
     oss_media_ts_stream_close(stream);    
 }
 
@@ -475,8 +483,8 @@ void test_oss_media_ts_stream_flush(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
     
     memcpy(&stream->ts_file->buffer->buf[stream->ts_file->buffer->pos],
            ts_content, strlen(ts_content));
@@ -586,11 +594,13 @@ void test_oss_media_write_stream_frame_with_write_frame_failed(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_ts_fake_handler;
     stream->ts_file->frame_count = 1;    
+    stream->m3u8_file->options.handler_func = oss_media_ts_fake_handler;
+    stream->m3u8_file->frame_count = 0;
 
     oss_media_ts_frame_t frame;
     frame.pts = 5000;
@@ -616,12 +626,15 @@ void test_oss_media_write_stream_frame_with_flush_ts_failed(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_ts_fake_handler;
     stream->ts_file->frame_count = 1;
     stream->current_file_begin_pts = 800000;
+
+    stream->m3u8_file->options.handler_func = oss_media_ts_fake_handler;
+    stream->m3u8_file->frame_count = 0;
 
     oss_media_ts_frame_t frame;
     frame.pts = 5000;
@@ -631,7 +644,7 @@ void test_oss_media_write_stream_frame_with_flush_ts_failed(CuTest *tc) {
     ret = oss_media_write_stream_frame(&frame, stream);
     CuAssertIntEquals(tc, -1, ret);
     CuAssertIntEquals(tc, 800000, stream->current_file_begin_pts);
-    
+
     oss_media_ts_stream_close(stream);
 }
 
@@ -647,8 +660,8 @@ void test_oss_media_write_stream_frame_with_new_file_failed(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_ts_fake_handler;
     stream->ts_file->frame_count = 0;
@@ -663,8 +676,6 @@ void test_oss_media_write_stream_frame_with_new_file_failed(CuTest *tc) {
     CuAssertIntEquals(tc, -1, ret);
     CuAssertIntEquals(tc, 800000, stream->current_file_begin_pts);
 
-    oss_media_ts_stream_flush(10, stream);    
-    delete_file(stream->ts_file->file);
     delete_file(stream->m3u8_file->file);
     oss_media_ts_stream_close(stream);
 }
@@ -681,8 +692,8 @@ void test_oss_media_write_stream_frame_succeeded(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_ts_fake_handler;
     stream->ts_file->frame_count = -5;
@@ -726,8 +737,8 @@ void test_oss_media_get_video_frame_with_no_consume(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->video_frame->end = stream->video_frame->pos + 10;
     
@@ -754,8 +765,8 @@ void test_oss_media_get_video_frame_with_get_first_frame(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
     
     uint8_t buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 
                      0x00, 0x00, 0x00, 0x01};
@@ -789,8 +800,8 @@ void test_oss_media_get_video_frame_with_get_last_frame(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
     
     uint8_t buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10};
     
@@ -808,7 +819,7 @@ void test_oss_media_get_video_frame_with_get_last_frame(CuTest *tc) {
     oss_media_ts_stream_flush(10, stream);
     delete_file(stream->ts_file->file);
     delete_file(stream->m3u8_file->file);
-    oss_media_ts_stream_close(stream);
+    oss_media_ts_stream_close(stream);    
 }
 
 void test_oss_media_get_audio_frame_with_no_data(CuTest *tc) {
@@ -831,8 +842,8 @@ void test_oss_media_get_audio_frame_with_no_consume(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->audio_frame->end = stream->audio_frame->pos + 10;
     
@@ -858,8 +869,8 @@ void test_oss_media_get_audio_frame_with_get_first_frame(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
     
     uint8_t buf[] = {0xFF, 0xF0, 0x00, 0x01, 0x09, 0x10, 
                      0xFF, 0xF1};
@@ -894,8 +905,8 @@ void test_oss_media_get_audio_frame_with_get_last_frame(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
     
     uint8_t buf[] = {0xFF, 0xF0, 0x00, 0x01, 0x09, 0x10};
     
@@ -971,8 +982,8 @@ void test_oss_media_ts_stream_write_with_no_video_audio(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);    
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);    
 
     ret = oss_media_ts_stream_write(video_buf, 0, audio_buf, 0, stream);
     CuAssertIntEquals(tc, 0, ret);
@@ -999,8 +1010,8 @@ void test_oss_media_ts_stream_write_with_only_video(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_ts_stream_write(video_buf, sizeof(video_buf),
                                     audio_buf, 0, stream);
@@ -1029,8 +1040,8 @@ void test_oss_media_ts_stream_write_with_only_audio(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_ts_stream_write(video_buf, 0,
                                     audio_buf, sizeof(audio_buf), stream);
@@ -1062,8 +1073,8 @@ void test_oss_media_ts_stream_write(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_ts_stream_write(video_buf, sizeof(video_buf),
                                     audio_buf, sizeof(audio_buf), stream);
@@ -1096,8 +1107,8 @@ void test_oss_media_ts_stream_write_with_same_pts(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_ts_stream_write(video_buf, sizeof(video_buf),
                                     audio_buf, sizeof(audio_buf), stream);
@@ -1127,8 +1138,8 @@ void test_oss_media_ts_stream_write_failed(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     stream->video_frame->pts = 900000;
     stream->current_file_begin_pts = 0;
@@ -1163,8 +1174,8 @@ void test_oss_media_ts_stream_close_for_vod(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_ts_stream_write(video_buf, sizeof(video_buf),
                                     audio_buf, 0, stream);
@@ -1245,8 +1256,8 @@ void test_oss_media_ts_stream_close_for_live(CuTest *tc) {
     
     int ret;
     oss_media_ts_stream_t *stream;
-    ret = oss_media_ts_stream_open(auth_func, &option, &stream);
-    CuAssertIntEquals(tc, 0, ret);
+    stream = oss_media_ts_stream_open(auth_func, &option);
+    CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_ts_stream_write(video_buf, sizeof(video_buf),
                                     audio_buf, 0, stream);

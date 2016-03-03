@@ -316,42 +316,42 @@ static int oss_media_ts_ends_with(const char *str, const char *surfix) {
     return strncmp(str + strlen(str) - strlen(surfix), surfix, strlen(surfix)) == 0;
 }
 
-int oss_media_ts_open(char *bucket_name,
-                      char *object_key,
-                      auth_fn_t auth_func,
-                      oss_media_ts_file_t **file)
+oss_media_ts_file_t* oss_media_ts_open(char *bucket_name,
+                                       char *object_key,
+                                       auth_fn_t auth_func)
 {
-    *file = (oss_media_ts_file_t*)malloc(sizeof(oss_media_ts_file_t));
+    oss_media_ts_file_t* file;
     
-    (*file)->file = oss_media_file_open(bucket_name, object_key, "a", auth_func);
-    if ((*file)->file == NULL) {
+    file = (oss_media_ts_file_t*)malloc(sizeof(oss_media_ts_file_t));
+    
+    file->file = oss_media_file_open(bucket_name, object_key, "a", auth_func);
+    if (file->file == NULL) {
         aos_error_log("open oss media file failed.");
-        free(*file);
-        *file = NULL;
-        return -1;
+        free(file);
+        return NULL;
     }
 
-    (*file)->frame_count = 0;
-    (*file)->options.video_pid = OSS_MEDIA_DEFAULT_VIDEO_PID;
-    (*file)->options.audio_pid = OSS_MEDIA_DEFAULT_AUDIO_PID;
-    (*file)->options.hls_delay_ms = OSS_MEDIA_TS_HLS_DELAY;
-    (*file)->options.encrypt = 0;
-    (*file)->options.handler_func = oss_media_ts_ossfile_handler;
-    (*file)->options.pat_interval_frame_count = OSS_MEDIA_PAT_INTERVAL_FRAME_COUNT;
+    file->frame_count = 0;
+    file->options.video_pid = OSS_MEDIA_DEFAULT_VIDEO_PID;
+    file->options.audio_pid = OSS_MEDIA_DEFAULT_AUDIO_PID;
+    file->options.hls_delay_ms = OSS_MEDIA_TS_HLS_DELAY;
+    file->options.encrypt = 0;
+    file->options.handler_func = oss_media_ts_ossfile_handler;
+    file->options.pat_interval_frame_count = OSS_MEDIA_PAT_INTERVAL_FRAME_COUNT;
     
-    (*file)->buffer = (oss_media_ts_buf_t*)malloc(sizeof(oss_media_ts_buf_t));
-    (*file)->buffer->start = 0;
-    (*file)->buffer->pos = 0;
+    file->buffer = (oss_media_ts_buf_t*)malloc(sizeof(oss_media_ts_buf_t));
+    file->buffer->start = 0;
+    file->buffer->pos = 0;
         
     if (oss_media_ts_ends_with(object_key, OSS_MEDIA_M3U8_FILE_SURFIX)) {
-        (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER / 32);
-        (*file)->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER / 32;
+        file->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER / 32);
+        file->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER / 32;
     } else {
-        (*file)->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER);
-        (*file)->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER;
+        file->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER);
+        file->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER;
     }
 
-    return 0;
+    return file;
 }
 
 int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
@@ -488,17 +488,17 @@ void oss_media_ts_begin_m3u8(int32_t max_duration,
                              int32_t sequence,
                              oss_media_ts_file_t *file) 
 {
+    int len;
     static const char *header = "#EXTM3U\n"
                                 "#EXT-X-TARGETDURATION:%d\n"
                                 "#EXT-X-MEDIA-SEQUENCE:%d\n"
                                 "#EXT-X-VERSION:3\n";
         
     char m3u8_header[strlen(header) + 12];
-    sprintf(m3u8_header, header, max_duration, sequence);
-        
-    memcpy(&file->buffer->buf[file->buffer->pos], m3u8_header, 
-           strlen(m3u8_header));
-    file->buffer->pos += strlen(m3u8_header);
+    len = sprintf(m3u8_header, header, max_duration, sequence);
+    
+    memcpy(&file->buffer->buf[file->buffer->pos], m3u8_header, len);
+    file->buffer->pos += len;
 }
 
 void oss_media_ts_end_m3u8(oss_media_ts_file_t *file) {
@@ -531,13 +531,15 @@ int oss_media_ts_flush(oss_media_ts_file_t *file) {
 }
 
 int oss_media_ts_close(oss_media_ts_file_t *file) {
+    int ret = 0;
+
     if (NULL == file) {
         return 0;
     }
     
     if (oss_media_ts_flush(file) != 0) {
-        aos_error_log("flush file[%s] failed.", file->file->object_key);
-        return -1;
+        aos_error_log("flush file failed.");
+        ret = -1;
     }
         
     oss_media_file_close(file->file);
@@ -546,6 +548,7 @@ int oss_media_ts_close(oss_media_ts_file_t *file) {
     free(file->buffer);
 
     free(file);
+    file = NULL;
 
-    return 0;
+    return ret;
 }

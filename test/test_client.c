@@ -110,9 +110,6 @@ void test_write_file_failed_with_invalid_key(CuTest *tc) {
     write_size = oss_media_file_write(file, content, strlen(content));
     CuAssertIntEquals(tc, -1, write_size);
 
-    ret = oss_media_file_stat(file, &stat);
-    CuAssertIntEquals(tc, -1, ret);
-
     // close file
     delete_file(file);
     oss_media_file_close(file);

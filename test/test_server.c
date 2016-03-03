@@ -7,6 +7,7 @@
 
 static void init_media_config(oss_media_config_t *config);
 static int64_t write_file(const char* key, oss_media_config_t *config);
+static void clear_bucket(oss_media_config_t *config);
 
 void test_server_setup(CuTest *tc) {
     aos_pool_t *p = NULL;
@@ -259,6 +260,7 @@ void test_list_files_succeeded(CuTest *tc) {
     char *file2 = NULL;
     
     init_media_config(&config);
+    clear_bucket(&config);
 
     file1 = "oss_media_file.1";
     write_file(file1, &config);
@@ -285,7 +287,7 @@ void test_list_files_succeeded(CuTest *tc) {
     CuAssertIntEquals(tc, 2, file_list->size);
     CuAssertStrEquals(tc, file1, file_list->file_names[0]);
     CuAssertStrEquals(tc, file2, file_list->file_names[1]);
-
+    
     oss_media_free_files(file_list);
 }
 
@@ -329,6 +331,17 @@ void test_list_files_failed(CuTest *tc) {
     
     CuAssertIntEquals(tc, -1, ret);
 
+    oss_media_free_files(file_list);
+}
+
+static void clear_bucket(oss_media_config_t *config) {
+    oss_media_files_t *file_list = oss_media_create_files();
+
+    int ret = oss_media_list_files(config, TEST_BUCKET_NAME, file_list);
+    int i;
+    for (i = 0; i < file_list->size; i++) {
+        oss_media_delete_file(config, TEST_BUCKET_NAME, file_list->file_names[i]);
+    }
     oss_media_free_files(file_list);
 }
 

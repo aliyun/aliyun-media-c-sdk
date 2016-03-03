@@ -102,7 +102,7 @@ oss_media_file_t* oss_media_file_open(char *bucket_name,
 }
 
 void oss_media_file_close(oss_media_file_t *file) {
-    if (file) {
+    if (NULL != file) {
         free(file);
         file = NULL;
     }

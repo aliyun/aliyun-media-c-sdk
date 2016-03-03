@@ -99,13 +99,12 @@ typedef struct oss_media_ts_file_s {
  *  open ts file.
  *
  *  return values:
- *      upon successful completion 0 is returned
- *      otherwise -1 is returned
+ *      On success, a pointer to the oss_media_ts_file_t
+ *      otherwise, a null pointer is returned
  */
-int oss_media_ts_open(char *bucket_name,
-                      char *object_key,
-                      auth_fn_t auth_func,
-                      oss_media_ts_file_t **file);
+oss_media_ts_file_t* oss_media_ts_open(char *bucket_name,
+                                       char *object_key,
+                                       auth_fn_t auth_func);
 
 /**
  *  write ts frame.
