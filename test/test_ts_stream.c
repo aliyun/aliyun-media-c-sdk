@@ -768,8 +768,8 @@ void test_oss_media_get_video_frame_with_get_first_frame(CuTest *tc) {
     stream = oss_media_ts_stream_open(auth_func, &option);
     CuAssertTrue(tc, stream != NULL);
     
-    uint8_t buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 
-                     0x00, 0x00, 0x00, 0x01};
+    uint8_t buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10,
+                     0x00, 0x00, 0x00, 0x01, 0x67};
 
     stream->video_frame->end = buf;
     stream->video_frame->pos = buf;
@@ -1004,8 +1004,7 @@ void test_oss_media_ts_stream_write_with_only_video(CuTest *tc) {
     option.audio_sample_rate = 24000;
     option.hls_time = 5;
 
-    uint8_t video_buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 0xfa,
-                         0x00, 0x00, 0x00, 0x01};
+    uint8_t video_buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 0xfa};
     uint8_t *audio_buf;
     
     int ret;
@@ -1016,7 +1015,7 @@ void test_oss_media_ts_stream_write_with_only_video(CuTest *tc) {
     ret = oss_media_ts_stream_write(video_buf, sizeof(video_buf),
                                     audio_buf, 0, stream);
     CuAssertIntEquals(tc, 0, ret);
-    CuAssertIntEquals(tc, 752, stream->ts_file->buffer->pos);
+    CuAssertIntEquals(tc, 564, stream->ts_file->buffer->pos);
 
     oss_media_ts_stream_flush(10, stream);    
     delete_file(stream->ts_file->file);

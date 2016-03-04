@@ -29,6 +29,7 @@ typedef struct oss_media_ts_stream_s {
     oss_media_ts_m3u8_info_t *m3u8_infos;
     int32_t ts_file_index;
     int64_t current_file_begin_pts;
+    int32_t has_aud;
     aos_pool_t *pool;
 } oss_media_ts_stream_t;
 

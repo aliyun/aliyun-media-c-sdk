@@ -35,6 +35,7 @@ oss_media_ts_stream_t* oss_media_ts_stream_open(auth_fn_t auth_func,
     stream->option = option;
     stream->ts_file_index = 0;
     stream->current_file_begin_pts = -1;
+    stream->has_aud = 0;
 
     aos_pool_create(&stream->pool, NULL);
 
@@ -68,6 +69,7 @@ oss_media_ts_stream_t* oss_media_ts_stream_open(auth_fn_t auth_func,
     stream->video_frame = 
         (oss_media_ts_frame_t*)malloc(sizeof(oss_media_ts_frame_t));
     stream->video_frame->stream_type = st_h264;
+    stream->video_frame->frame_type = ft_unspecified;
     stream->video_frame->continuity_counter = 1;
     stream->video_frame->key = 1;
     stream->video_frame->pts = 5000;
@@ -78,6 +80,7 @@ oss_media_ts_stream_t* oss_media_ts_stream_open(auth_fn_t auth_func,
     stream->audio_frame = 
         (oss_media_ts_frame_t*)malloc(sizeof(oss_media_ts_frame_t));
     stream->audio_frame->stream_type = st_aac;
+    stream->audio_frame->frame_type = ft_unspecified;
     stream->audio_frame->continuity_counter = 1;
     stream->audio_frame->key = 1;
     stream->audio_frame->pts = 5000;
@@ -237,6 +240,64 @@ static int oss_media_need_flush(float duration,
     return 1;
 }
 
+static int oss_media_get_samples_per_frame(const oss_media_ts_stream_t *stream) 
+{
+    return stream->audio_frame->stream_type == st_mp3 ? 
+        OSS_MEDIA_MP3_SAMPLE_RATE : OSS_MEDIA_AAC_SAMPLE_RATE;
+}
+
+static int64_t oss_media_get_inc_pts(oss_media_ts_frame_t *frame,
+                                     oss_media_ts_stream_t *stream)
+{
+    int64_t samples_per_frame;
+    if (frame->stream_type == st_h264) {
+        return 90 * stream->option->video_frame_rate;
+    } else {
+        samples_per_frame = oss_media_get_samples_per_frame(stream);
+        return (90000 * samples_per_frame) / stream->option->audio_sample_rate;
+    } 
+}
+
+static int oss_media_append_aud(oss_media_ts_frame_t *frame,
+                                oss_media_ts_stream_t *stream)
+{
+    static uint8_t aud_nal[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10};
+   
+    oss_media_ts_frame_t aud_frame;
+
+    if (frame->frame_type == ft_aud) {
+        stream->has_aud = 1;
+        return 0;
+    }
+
+    if (stream->has_aud) {
+        return 0;
+    }
+
+    if (frame->frame_type != ft_non_idr && frame->frame_type != ft_sps) {
+        return 0;
+    }
+
+    aud_frame.stream_type = st_h264;
+    aud_frame.frame_type = ft_aud;
+    aud_frame.pts = frame->pts;
+    aud_frame.dts = aud_frame.pts;
+    aud_frame.continuity_counter = frame->continuity_counter;
+    aud_frame.key = 0;
+    aud_frame.pos = aud_nal;
+    aud_frame.end = aud_nal + sizeof(aud_nal);
+
+    if(oss_media_ts_write_frame(&aud_frame, stream->ts_file) != 0) {
+        aos_error_log("write aud frame failed.");
+        return -1;
+    }
+    
+    frame->continuity_counter = aud_frame.continuity_counter;
+    frame->pts += oss_media_get_inc_pts(frame, stream);
+    frame->dts = frame->pts;
+    return 0;
+}
+
 static int oss_media_write_stream_frame(oss_media_ts_frame_t *frame,
                                         oss_media_ts_stream_t *stream)
 {
@@ -256,6 +317,11 @@ static int oss_media_write_stream_frame(oss_media_ts_frame_t *frame,
             aos_error_log("close file and open new file failed.");
             return -1;
         }
+    }
+
+    if (oss_media_append_aud(frame, stream) != 0) {
+        aos_error_log("append aud failed.");
+        return -1;
     }
     
     int ret = oss_media_ts_write_frame(frame, stream->ts_file);
@@ -304,12 +370,13 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
 
     last_pos = frame->pos - buf;
     cur_pos = last_pos;
-    inc_pts = 90 * stream->option->video_frame_rate;
-    for (i = frame->end - buf; i < len - 3; i++) {
+    inc_pts = oss_media_get_inc_pts(frame, stream);
+    for (i = frame->end - buf; i < len - 4; i++) {
         if ((buf[i] & 0x0F) == 0x00 && buf[i+1] == 0x00
             && buf[i+2] == 0x00 && buf[i+3] == 0x01)
         {
             cur_pos = i;
+            frame->frame_type = buf[last_pos+4] & 0x1F;
         }
 
         if (oss_media_extract_frame(buf, last_pos, cur_pos, inc_pts, frame)) {
@@ -319,13 +386,6 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
 
     return oss_media_extract_frame(buf, last_pos, len, inc_pts, frame);
 }
-
-static int oss_media_get_samples_per_frame(const oss_media_ts_stream_t *stream) 
-{
-    return stream->audio_frame->stream_type == st_mp3 ? 
-        OSS_MEDIA_MP3_SAMPLE_RATE : OSS_MEDIA_AAC_SAMPLE_RATE;
-}
-
 
 static int oss_media_get_audio_frame(uint8_t *buf, uint64_t len, 
                                      oss_media_ts_stream_t *stream)
@@ -350,9 +410,7 @@ static int oss_media_get_audio_frame(uint8_t *buf, uint64_t len,
     }
 
     last_pos = frame->pos - buf;
-    samples_per_frame = oss_media_get_samples_per_frame(stream);
-    inc_pts = (90000 * samples_per_frame) / stream->option->audio_sample_rate;
-    
+    inc_pts = oss_media_get_inc_pts(frame, stream);    
     for (i = frame->end - buf; i < len - 1; i++) {
         if (buf[i] == 0xFF && (buf[i+1] & 0xF0) == 0xF0)
         {

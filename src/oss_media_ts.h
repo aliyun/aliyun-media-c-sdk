@@ -40,6 +40,7 @@ typedef enum {
  */
 typedef struct oss_media_ts_frame_s {
     stream_type_t stream_type;
+    frame_type_t frame_type;
     uint64_t pts;
     uint64_t dts;
     uint32_t continuity_counter;
