@@ -82,24 +82,6 @@ IF (CURL_CONFIG_BIN)
 ELSE()
     MESSAGE(FATAL_ERROR "Could not find curl-config")
 ENDIF()
-
-#wolfssl-config
-FIND_PROGRAM(WOLFSSL_CONFIG_BIN NAMES wolfssl-config)
-  
-IF (WOLFSSL_CONFIG_BIN)
-    EXECUTE_PROCESS(
-        COMMAND ${WOLFSSL_CONFIG_BIN} --includedir
-        OUTPUT_VARIABLE WOLFSSL_INCLUDEDIRS
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    EXECUTE_PROCESS(
-        COMMAND ${WOLFSSL_CONFIG_BIN} --libs
-        OUTPUT_VARIABLE WOLFSSL_LIBRARIES
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-ELSE()
-    MESSAGE(FATAL_ERROR "Could not find wolfssl-config")
-ENDIF()
   
 # Compile and link lib_oss_c_sdk
 include_directories(${APR_INCLUDEDIRS})

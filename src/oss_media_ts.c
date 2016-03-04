@@ -1,7 +1,6 @@
 #include <string.h>
 #include <math.h>
 #include <stdio.h>
-#include <wolfssl/wolfcrypt/aes.h>
 #include "oss_media_ts.h"
 #include "oss_media_client.h"
 
@@ -69,10 +68,6 @@ static uint8_t *oss_media_ts_write_pts(uint8_t *p, uint32_t fb, uint64_t pts) {
 }
 
 static void oss_media_ts_encrypt_packet(oss_media_ts_file_t *file, uint8_t *packet) {
-    Aes aes;
-    wc_AesSetKey(&aes, file->options.key, OSS_MEDIA_TS_ENCRYPT_KEY_SIZE, 
-                 NULL, AES_ENCRYPTION);
-    wc_AesCbcEncrypt(&aes, packet, packet, OSS_MEDIA_TS_ENCRYPT_PACKET_LENGTH);
 }
 
 static uint8_t *oss_media_ts_write_hls_header(uint8_t *p, int16_t pid)
