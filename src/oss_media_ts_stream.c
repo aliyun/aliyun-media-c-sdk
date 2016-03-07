@@ -21,9 +21,11 @@ static char *oss_media_create_new_ts_file_name(
     sprintf(pos_str, "%d", stream->ts_file_index++);
     
     return apr_psprintf(stream->pool, "%.*s%.*s%.*s",
-                        (int)strlen(option->ts_name_prefix), option->ts_name_prefix,
+                        (int)strlen(option->ts_name_prefix), 
+                        option->ts_name_prefix,
                         (int)strlen(pos_str), pos_str,
-                        (int)strlen(OSS_MEDIA_TS_FILE_SURFIX), OSS_MEDIA_TS_FILE_SURFIX);
+                        (int)strlen(OSS_MEDIA_TS_FILE_SURFIX), 
+                        OSS_MEDIA_TS_FILE_SURFIX);
 }
 
 
@@ -376,6 +378,7 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
         {
             cur_pos = i;
             frame->frame_type = buf[last_pos+4] & 0x1F;
+            frame->key = frame->frame_type == ft_idr;
         }
 
         if (oss_media_extract_frame(buf, last_pos, cur_pos, inc_pts, frame)) {
