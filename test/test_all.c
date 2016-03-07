@@ -1,6 +1,7 @@
 #include "CuTest.h"
 #include "oss_c_sdk/aos_log.h"
 #include "oss_c_sdk/aos_http_io.h"
+#include "src/oss_media_define.h"
 
 extern CuSuite *test_client();
 extern CuSuite *test_server();
@@ -94,7 +95,7 @@ int run_all_tests(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     int exit_code;
-    if (aos_http_io_initialize(0) != AOSE_OK) {
+    if (aos_http_io_initialize(OSS_MEDIA_CLIENT_USER_AGENT, 0) != AOSE_OK) {
         exit(1);
     }
     

@@ -27,7 +27,7 @@ int oss_media_init(aos_log_level_e log_level)
 {
     aos_log_set_level(log_level);
     aos_log_set_output(NULL);
-    return aos_http_io_initialize(0);
+    return aos_http_io_initialize(OSS_MEDIA_SERVER_USER_AGENT, 0);
 }
 
 void oss_media_destroy() 
@@ -102,7 +102,7 @@ int oss_media_create_bucket(const oss_media_config_t *config,
 
     if (!aos_status_is_ok(status)) {
         aos_error_log("create bucket failed. request_id:%s, code:%d, "
-                      "error_code:%d, error_message:%s",
+                      "error_code:%s, error_message:%s",
                       status->req_id, status->code, status->error_code,
                       status->error_msg);
         aos_pool_destroy(pool);
@@ -131,7 +131,7 @@ int oss_media_delete_bucket(const oss_media_config_t *config,
 
     if (!aos_status_is_ok(status)) {
         aos_error_log("delete bucket failed. request_id:%s, code:%d, "
-                      "error_code:%d, error_message:%s",
+                      "error_code:%s, error_message:%s",
                       status->req_id, status->code, status->error_code,
                       status->error_msg);
         aos_pool_destroy(pool);
@@ -177,7 +177,7 @@ int oss_media_create_bucket_lifecycle(const oss_media_config_t *config,
 
     if (!aos_status_is_ok(status)) {
         aos_error_log("create bucket lifecycle failed. request_id:%s, code:%d, "
-                      "error_code:%d, error_message:%s",
+                      "error_code:%s, error_message:%s",
                       status->req_id, status->code, status->error_code,
                       status->error_msg);
         aos_pool_destroy(pool);
@@ -214,7 +214,7 @@ int oss_media_get_bucket_lifecycle(const oss_media_config_t *config,
 
     if (!aos_status_is_ok(status)) {
         aos_error_log("get bucket lifecycle failed. request_id:%s, code:%d, "
-                      "error_code:%d, error_message:%s",
+                      "error_code:%s, error_message:%s",
                       status->req_id, status->code, status->error_code,
                       status->error_msg);
         aos_pool_destroy(pool);
@@ -265,7 +265,7 @@ int oss_media_delete_bucket_lifecycle(const oss_media_config_t *config,
 
     if (!aos_status_is_ok(status)) {
         aos_error_log("delete bucket lifecycle failed. request_id:%s, code:%d, "
-                      "error_code:%d, error_message:%s",
+                      "error_code:%s, error_message:%s",
                       status->req_id, status->code, status->error_code,
                       status->error_msg);
         aos_pool_destroy(pool);
@@ -297,7 +297,7 @@ int oss_media_delete_file(const oss_media_config_t *config,
 
     if (!aos_status_is_ok(status)) {
         aos_error_log("delete file failed. request_id:%s, code:%d, "
-                      "error_code:%d, error_message:%s",
+                      "error_code:%s, error_message:%s",
                       status->req_id, status->code, status->error_code,
                       status->error_msg);
         aos_pool_destroy(pool);
@@ -340,7 +340,7 @@ int oss_media_list_files(const oss_media_config_t *config,
 
     if (!aos_status_is_ok(status)) {
         aos_error_log("list files failed. request_id:%s, code:%d, "
-                      "error_code:%d, error_message:%s",
+                      "error_code:%s, error_message:%s",
                       status->req_id, status->code, status->error_code,
                       status->error_msg);
         aos_pool_destroy(pool);
@@ -399,8 +399,8 @@ int oss_media_get_token_from_policy(const oss_media_config_t *config,
     char errorMessage[1024];
     int sts_status;
 
-    sts_status = STS_assume_role(config->role_arn, OSS_MEDIA_USER_AGENT, 
-                                 policy, expiration, config->access_key_id, 
+    sts_status = STS_assume_role(config->role_arn, OSS_MEDIA_SERVER_USER_AGENT,
+                                 policy, expiration, config->access_key_id,
                                  config->access_key_secret, token, errorMessage);
     
     if (STSStatusOK != sts_status) {

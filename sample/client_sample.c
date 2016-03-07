@@ -4,6 +4,9 @@
 char *g_filename="oss_media_file";
 char *g_val = "hello oss media file, this is my first time to write content.\n";
 
+extern int oss_media_get_h264_idr_offsets(const void *buf, 
+        int nbyte, int idrs[], int nidrs, int *size);
+
 static void oss_clean(const char *filename) {
     aos_pool_t *pool;
     oss_request_options_t *opts;
@@ -138,7 +141,7 @@ static void read_file() {
     oss_media_file_stat_t stat;
     if (0 != oss_media_file_stat(file, &stat)) {
         oss_media_file_close(file);
-        printf("stat media file[%s] failed\n", file);
+        printf("stat media file[%s] failed\n", file->object_key);
         return;
     }
 
@@ -181,7 +184,7 @@ static void seek_file() {
     oss_media_file_stat_t stat;
     if (0 != oss_media_file_stat(file, &stat)) {
         oss_media_file_close(file);
-        printf("stat media file[%s] failed\n", file);
+        printf("stat media file[%s] failed\n", file->object_key);
         return;
     }
 
@@ -195,7 +198,7 @@ static void seek_file() {
     oss_media_file_seek(file, stat.length / 2);
 
     // tell
-    aos_info_log("file [position=%" PRId64 "] after seek %ld", 
+    aos_info_log("file [position=%" PRId64 "] after seek %" PRId64, 
                  oss_media_file_tell(file), stat.length / 2);
 
     // read
@@ -290,13 +293,17 @@ static void perf(int loop) {
 
     struct timeval  start;
     struct timeval  end;
+    int64_t duration = 0;
+
     for (i = 0; i < loop; i++) {
         gettimeofday(&start, NULL);
         oss_media_file_write(file, buf, nbyte);
         gettimeofday(&end, NULL);
 
-        printf("perf: [dur=%d, len=%ld""]\n", end.tv_sec * 1000 + end.tv_usec / 1000 
-               - start.tv_sec * 1000 - start.tv_usec / 1000, file->_stat.length);
+        duration = end.tv_sec * 1000 + end.tv_usec / 1000 - 
+                   start.tv_sec * 1000 - start.tv_usec / 1000;
+        printf("perf: [duration=%" PRId64 ", len=%" PRId64 "]\n", 
+               duration, file->_stat.length);
     }
 
     oss_media_file_close(file);

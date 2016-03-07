@@ -447,7 +447,6 @@ void test_oss_media_ts_ossfile_handler_succeeded(CuTest *tc) {
 
 void test_oss_media_ts_ossfile_handler_failed(CuTest *tc) {
     int ret;
-    int64_t length;
     oss_media_ts_file_t *file;
     char *content = "hangzhou";
 
@@ -514,7 +513,6 @@ void test_oss_media_ts_ends_with_is_false(CuTest *tc) {
 }
 
 void test_oss_media_ts_open_with_ts_file(CuTest *tc) {
-    int ret;
     oss_media_ts_file_t *file;
     
     file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.ts", auth_func);
@@ -536,7 +534,6 @@ void test_oss_media_ts_open_with_ts_file(CuTest *tc) {
 }
 
 void test_oss_media_ts_open_with_m3u8_file(CuTest *tc) {
-    int ret;
     oss_media_ts_file_t *file;
     
     file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.m3u8", auth_func);
@@ -548,7 +545,6 @@ void test_oss_media_ts_open_with_m3u8_file(CuTest *tc) {
 }
 
 void test_oss_media_ts_open_failed(CuTest *tc) {
-    int ret;
     oss_media_ts_file_t *file;
     
     file = oss_media_ts_open("not.bucket", "test2.m3u8", auth_func);
@@ -556,7 +552,6 @@ void test_oss_media_ts_open_failed(CuTest *tc) {
 }
 
 void test_oss_media_ts_begin_m3u8(CuTest *tc) {
-    int ret;
     oss_media_ts_file_t *file;
     
     file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.m3u8", auth_func);
@@ -573,7 +568,6 @@ void test_oss_media_ts_begin_m3u8(CuTest *tc) {
 }
 
 void test_oss_media_ts_end_m3u8(CuTest *tc) {
-    int ret;
     oss_media_ts_file_t *file;
     
     file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.m3u8", auth_func);

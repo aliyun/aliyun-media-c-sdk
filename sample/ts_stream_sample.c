@@ -296,7 +296,7 @@ static void write_video_audio_live() {
         ret = oss_media_ts_stream_write(h264_buf, h264_len, 
                 aac_buf, aac_len, stream);
         if (ret != 0) {
-            printf("write vod stream failed.\n");
+            printf("write live stream failed.\n");
             return;
         }
         free(file_path);
@@ -305,7 +305,7 @@ static void write_video_audio_live() {
 
     ret = oss_media_ts_stream_close(stream);
     if (ret != 0) {
-        printf("close vod stream failed.\n");
+        printf("close live stream failed.\n");
         return;
     }
 
@@ -345,4 +345,6 @@ int main(int argc, char *argv[]) {
     }
 
     oss_media_destroy();
+
+    return 0;
 }

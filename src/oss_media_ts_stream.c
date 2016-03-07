@@ -21,9 +21,9 @@ static char *oss_media_create_new_ts_file_name(
     sprintf(pos_str, "%d", stream->ts_file_index++);
     
     return apr_psprintf(stream->pool, "%.*s%.*s%.*s",
-                        strlen(option->ts_name_prefix), option->ts_name_prefix,
-                        strlen(pos_str), pos_str,
-                        strlen(OSS_MEDIA_TS_FILE_SURFIX), OSS_MEDIA_TS_FILE_SURFIX);
+                        (int)strlen(option->ts_name_prefix), option->ts_name_prefix,
+                        (int)strlen(pos_str), pos_str,
+                        (int)strlen(OSS_MEDIA_TS_FILE_SURFIX), OSS_MEDIA_TS_FILE_SURFIX);
 }
 
 
@@ -115,10 +115,10 @@ static char* oss_media_create_ts_full_url(aos_pool_t *pool,
         proto = req.proto;
     }
 
-    return apr_psprintf(pool, "%.*s%.*s/%.*s%",
-                        strlen(proto), proto,
-                        strlen(req.host), req.host,
-                        strlen(req.uri), req.uri);
+    return apr_psprintf(pool, "%.*s%.*s/%.*s",
+                        (int)strlen(proto), proto,
+                        (int)strlen(req.host), req.host,
+                        (int)strlen(req.uri), req.uri);
 }
 
 static void oss_media_set_m3u8_info(int32_t pos,
@@ -138,7 +138,6 @@ static int oss_media_write_m3u8(float duration,
                                 oss_media_ts_stream_t *stream)
 {
     int i;
-    int ret;
     int32_t pos;
     int32_t cur_m3u8_count;
     
@@ -209,7 +208,7 @@ static int oss_media_ts_stream_flush(float duration,
     // flush ts file
     ret = oss_media_ts_flush(stream->ts_file);
     if (ret != 0) {
-        aos_error_log("write ts file failed.",
+        aos_error_log("write ts file[%s] failed.",
                       stream->ts_file->file->object_key);
         return -1;
     }
@@ -217,7 +216,7 @@ static int oss_media_ts_stream_flush(float duration,
     // write m3u8 index
     ret = oss_media_write_m3u8(duration, stream);
     if (ret != 0) {
-        aos_error_log("write m3u8 file failed.",
+        aos_error_log("write m3u8 file[%s] failed.",
                       stream->m3u8_file->file->object_key);
         return -1;
     }
@@ -394,7 +393,6 @@ static int oss_media_get_audio_frame(uint8_t *buf, uint64_t len,
     int64_t cur_pos = -1;
     int64_t last_pos = -1;
     int64_t inc_pts = 0;
-    int samples_per_frame = 0;
     oss_media_ts_frame_t *frame = NULL;
 
     if (len <= 0) {

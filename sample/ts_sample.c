@@ -61,7 +61,6 @@ static void do_write(oss_media_ts_file_t *file) {
 }
 
 static void write_ts() {
-    int ret;
     oss_media_ts_file_t *file;
     
     file = oss_media_ts_open(SAMPLE_BUCKET_NAME, "oss_media_ts.ts", 
@@ -81,7 +80,6 @@ static void write_ts() {
 
 static void write_m3u8() {
     oss_media_ts_file_t *file;
-    int ret;
 
     file = oss_media_ts_open(SAMPLE_BUCKET_NAME, "oss_media_ts.m3u8", 
                              auth_func);
@@ -130,4 +128,6 @@ int main(int argc, char *argv[]) {
     }
 
     oss_media_destroy();
+
+    return 0;
 }

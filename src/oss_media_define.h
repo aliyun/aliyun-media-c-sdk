@@ -9,7 +9,8 @@
 # define OSS_MEDIA_CPP_END
 #endif
 
-extern char OSS_MEDIA_USER_AGENT[];
+extern char OSS_MEDIA_CLIENT_USER_AGENT[];
+extern char OSS_MEDIA_SERVER_USER_AGENT[];
 
 extern int OSS_MEDIA_FILE_NOT_FOUND;
 extern char OSS_MEDIA_FILE_UNKNOWN_TYPE[];

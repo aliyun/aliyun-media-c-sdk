@@ -83,7 +83,7 @@ static uint8_t *oss_media_ts_write_hls_header(uint8_t *p, int16_t pid)
     
     *p++ = sync_byte;
     *p++ = (transport_error_indicator << 7) | (payload_unit_start_indicator << 6) 
-           | (transport_priority << 5) | (pat_pid >> 8) & 0x1F;
+           | (transport_priority << 5) | ((pat_pid >> 8) & 0x1F);
     *p++ = pat_pid & 0xff;
     *p++ = (transport_scrambling_control << 6) | (adaptation_field_control << 4)
            | (continuity_counter & 0x0F);

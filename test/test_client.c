@@ -94,8 +94,6 @@ void test_write_file_failed_with_invalid_key(CuTest *tc) {
     oss_media_file_t *file = NULL;
     char *content = NULL;
     char *file_name = NULL;
-    oss_media_file_stat_t stat;
-    int ret;
 
     content = "hello oss media file\n";
     file_name = "\\invalid.key";
@@ -120,8 +118,6 @@ void test_write_file_failed_with_wrong_flag(CuTest *tc) {
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
     char *content = NULL;
-    oss_media_file_stat_t stat;
-    int ret;
 
     content = "hello oss media file\n";
 
@@ -216,15 +212,12 @@ void test_append_file_failed_with_appendable_cover_normal(CuTest *tc) {
 }
 
 void test_read_file_succeeded(CuTest *tc) {
-    int64_t read_size = 0;
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
     char *write_content = NULL;
     char *read_content = NULL;
-    oss_media_file_stat_t stat;
     int ntotal, nread, nbuf = 4;
     char buf[4];
-    int ret;
     
     write_content = "hello oss media file\n";
     write_size = write_file(write_content);
@@ -253,15 +246,12 @@ void test_read_file_succeeded(CuTest *tc) {
 }
 
 void test_read_part_file_succeeded(CuTest *tc) {
-    int64_t read_size = 0;
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
     char *write_content = NULL;
     char *read_content = NULL;
-    oss_media_file_stat_t stat;
-    int ntotal, nread, nbuf = 4;
+    int nread = 4;
     char buf[100];
-    int ret;
     
     write_content = "hello oss media file\n";
     write_size = write_file(write_content);
@@ -310,10 +300,8 @@ void test_read_file_failed_with_wrong_flag(CuTest *tc) {
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
     char *write_content = NULL;
-    oss_media_file_stat_t stat;
-    int ntotal, nread, nbuf = 4;
+    int nread, nbuf = 4;
     char buf[4];
-    int ret;
     
     write_content = "hello oss media file\n";
     write_size = write_file(write_content);
@@ -336,10 +324,8 @@ void test_read_file_failed_with_eof(CuTest *tc) {
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
     char *write_content = NULL;
-    oss_media_file_stat_t stat;
-    int ntotal, nread, nbuf = 4;
+    int nread, nbuf = 4;
     char buf[4];
-    int ret;
     
     write_content = "hello oss media file\n";
     write_size = write_file(write_content);
@@ -371,15 +357,11 @@ void test_read_file_failed_with_eof(CuTest *tc) {
 }
 
 void test_read_file_failed_with_key_is_not_exist(CuTest *tc) {
-    int64_t read_size = 0;
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
     char *write_content = NULL;
-    char *read_content = NULL;
-    oss_media_file_stat_t stat;
-    int ntotal, nread, nbuf = 4;
+    int nread, nbuf = 4;
     char buf[4];
-    int ret;
     
     write_content = "hello oss media file\n";
     write_size = write_file(write_content);
@@ -400,15 +382,11 @@ void test_read_file_failed_with_key_is_not_exist(CuTest *tc) {
 }
 
 void test_read_file_failed_with_invalid_key(CuTest *tc) {
-    int64_t read_size = 0;
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
     char *write_content = NULL;
-    char *read_content = NULL;
-    oss_media_file_stat_t stat;
-    int ntotal, nread, nbuf = 4;
+    int nread, nbuf = 4;
     char buf[4];
-    int ret;
     
     write_content = "hello oss media file\n";
     write_size = write_file(write_content);
@@ -429,14 +407,9 @@ void test_read_file_failed_with_invalid_key(CuTest *tc) {
 }
 
 void test_seek_file_failed_with_invalid_pos(CuTest *tc) {
-    int64_t read_size = 0;
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
     char *write_content = NULL;
-    char *read_content = NULL;
-    oss_media_file_stat_t stat;
-    int ntotal, nread, nbuf = 4;
-    char buf[4];
     int ret;
     
     write_content = "hello oss media file\n";
@@ -456,14 +429,10 @@ void test_seek_file_failed_with_invalid_pos(CuTest *tc) {
 }
 
 void test_seek_file_failed_with_file_not_exist(CuTest *tc) {
-    int64_t read_size = 0;
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
     char *write_content = NULL;
     oss_media_file_stat_t stat;
-    char *read_content = NULL;
-    int ntotal, nread, nbuf = 4;
-    char buf[4];
     int ret;
     
     write_content = "hello oss media file\n";
@@ -493,15 +462,7 @@ void test_seek_file_failed_with_file_not_exist(CuTest *tc) {
 }
 
 void test_open_file_failed_with_wrong_flag(CuTest *tc) {
-    int64_t read_size = 0;
-    int64_t write_size = 0;
     oss_media_file_t *file = NULL;
-    char *write_content = NULL;
-    oss_media_file_stat_t stat;
-    char *read_content = NULL;
-    int ntotal, nread, nbuf = 4;
-    char buf[4];
-    int ret;
 
     // open file for read
     file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "x", auth_func);
@@ -520,7 +481,6 @@ static void auth_func(oss_media_file_t *file) {
 }
 
 int64_t write_file(const char* content) {
-    int ret;
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
 
@@ -542,7 +502,6 @@ void delete_file(oss_media_file_t *file) {
     aos_pool_t *p;
     aos_string_t bucket;
     aos_string_t object;
-    int is_oss_domain = 1;
     oss_request_options_t *options;
     aos_table_t *resp_headers;
 

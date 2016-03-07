@@ -1,6 +1,7 @@
 #include "oss_media_define.h"
 
-char OSS_MEDIA_USER_AGENT[] = "oss_media";
+char OSS_MEDIA_CLIENT_USER_AGENT[] = "oss_media_client";
+char OSS_MEDIA_SERVER_USER_AGENT[] = "oss_media_server";
 
 int OSS_MEDIA_FILE_NOT_FOUND = 404;
 char OSS_MEDIA_FILE_UNKNOWN_TYPE[] = "unknown";

@@ -44,7 +44,6 @@ void test_oss_media_ts_stream_open_with_vod(CuTest *tc) {
     option.audio_sample_rate = 24000;
     option.hls_time = 700;
     
-    int ret;
     oss_media_ts_stream_t *stream;
     stream = oss_media_ts_stream_open(auth_func, &option);
     CuAssertTrue(tc, stream != NULL);
@@ -84,7 +83,6 @@ void test_oss_media_ts_stream_open_with_live(CuTest *tc) {
     option.hls_time = 700;
     option.hls_list_size = 5;
     
-    int ret;
     oss_media_ts_stream_t *stream;
     stream = oss_media_ts_stream_open(auth_func, &option);
     CuAssertTrue(tc, stream != NULL);
@@ -125,7 +123,6 @@ void test_oss_media_ts_stream_open_with_failed(CuTest *tc) {
     option.hls_time = 700;
     option.hls_list_size = 5;
     
-    int ret;
     oss_media_ts_stream_t *stream;
     stream = oss_media_ts_stream_open(auth_func, &option);
     CuAssertTrue(tc, stream == NULL);
@@ -470,7 +467,6 @@ void test_oss_media_ts_stream_flush_with_write_m3u8_failed(CuTest *tc) {
 
 void test_oss_media_ts_stream_flush(CuTest *tc) {
     char *ts_content = "abc";
-    char *m3u8_content = "efg";
 
     oss_media_ts_stream_option_t option;
     option.ts_name_prefix = "test36-";
