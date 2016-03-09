@@ -6,8 +6,8 @@
 extern CuSuite *test_client();
 extern CuSuite *test_server();
 extern CuSuite *test_sts();
-extern CuSuite *test_ts();
-extern CuSuite *test_ts_stream();
+extern CuSuite *test_hls();
+extern CuSuite *test_hls_stream();
 
 static const struct testlist {
     const char *testname;
@@ -16,8 +16,8 @@ static const struct testlist {
     {"test_client", test_client},
     {"test_server", test_server},
     {"test_sts", test_sts},
-    {"test_ts", test_ts},
-    {"test_ts_stream", test_ts_stream},
+    {"test_hls", test_hls},
+    {"test_hls_stream", test_hls_stream},
     {"LastTest", NULL}
 };
 

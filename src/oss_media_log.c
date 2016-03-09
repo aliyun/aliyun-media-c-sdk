@@ -12,10 +12,9 @@ void oss_op_debug(char *op,
         aos_table_entry_t  *telts;
 
         if (NULL != op && NULL != status) {
-            aos_debug_log("req_id:%s \n", status->req_id);
-            aos_debug_log("%s status:\n", op);
-            aos_debug_log("    [code=%d, err_code=%s, err_msg=%s]\n", 
-                          status->code, status->error_code, status->error_msg);
+            aos_debug_log("req_id:%s, status:[code=%d, err_code=%s, err_msg=%s]\n", 
+                          status->req_id, status->code, 
+                          status->error_code, status->error_msg);
         }
 
         if (NULL != req_headers) {

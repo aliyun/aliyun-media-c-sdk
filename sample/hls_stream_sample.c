@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "src/oss_media_ts_stream.h"
+#include "src/oss_media_hls_stream.h"
 #include "config.h"
 #include "sample.h"
 
@@ -22,8 +22,8 @@ static void write_only_video_vod() {
     uint8_t *h264_buf;
     int h264_len;
     
-    oss_media_ts_stream_option_t option;
-    oss_media_ts_stream_t *stream = NULL;
+    oss_media_hls_stream_option_t option;
+    oss_media_hls_stream_t *stream = NULL;
 
     option.is_live = 0;
     option.bucket_name = SAMPLE_BUCKET_NAME;
@@ -32,9 +32,9 @@ static void write_only_video_vod() {
     option.video_frame_rate = 30;
     option.hls_time = 5;
     
-    stream = oss_media_ts_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &option);
     if (stream == NULL) {
-        printf("open ts stream failed.\n");
+        printf("open hls stream failed.\n");
         return;
     }
 
@@ -45,7 +45,7 @@ static void write_only_video_vod() {
         h264_len = fread(h264_buf, 1, max_size, h264_file);
         fclose(h264_file);
 
-        ret = oss_media_ts_stream_write(h264_buf, h264_len, NULL, 0, stream);
+        ret = oss_media_hls_stream_write(h264_buf, h264_len, NULL, 0, stream);
         if (ret != 0) {
             printf("write vod stream failed.\n");
             return;
@@ -57,7 +57,7 @@ static void write_only_video_vod() {
         h264_len = fread(h264_buf, 1, max_size, h264_file);
         fclose(h264_file);
 
-        ret = oss_media_ts_stream_write(h264_buf, h264_len, NULL, 0, stream);
+        ret = oss_media_hls_stream_write(h264_buf, h264_len, NULL, 0, stream);
         if (ret != 0) {
             printf("write vod stream failed.\n");
             return;
@@ -69,21 +69,21 @@ static void write_only_video_vod() {
         h264_len = fread(h264_buf, 1, max_size, h264_file);
         fclose(h264_file);
 
-        ret = oss_media_ts_stream_write(h264_buf, h264_len, NULL, 0, stream);
+        ret = oss_media_hls_stream_write(h264_buf, h264_len, NULL, 0, stream);
         if (ret != 0) {
             printf("write vod stream failed.\n");
             return;
         }        
     }
 
-    ret = oss_media_ts_stream_close(stream);
+    ret = oss_media_hls_stream_close(stream);
     if (ret != 0) {
         printf("close vod stream failed.\n");
         return;
     }
     
     free(h264_buf);
-    printf("convert H.264 to TS vod succeeded\n");
+    printf("convert H.264 to HLS vod succeeded\n");
 }
 
 static void write_only_audio_vod() {
@@ -93,8 +93,8 @@ static void write_only_audio_vod() {
     uint8_t *aac_buf;
     int aac_len;
     
-    oss_media_ts_stream_option_t option;
-    oss_media_ts_stream_t *stream = NULL;
+    oss_media_hls_stream_option_t option;
+    oss_media_hls_stream_t *stream = NULL;
 
     option.is_live = 0;
     option.bucket_name = SAMPLE_BUCKET_NAME;
@@ -103,9 +103,9 @@ static void write_only_audio_vod() {
     option.audio_sample_rate = 24000;
     option.hls_time = 5;
     
-    stream = oss_media_ts_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &option);
     if (stream == NULL) {
-        printf("open ts stream failed.\n");
+        printf("open hls stream failed.\n");
         return;
     }
 
@@ -116,7 +116,7 @@ static void write_only_audio_vod() {
         aac_len = fread(aac_buf, 1, max_size, aac_file);
         fclose(aac_file);
         
-        ret = oss_media_ts_stream_write(NULL, 0, aac_buf, aac_len, stream);
+        ret = oss_media_hls_stream_write(NULL, 0, aac_buf, aac_len, stream);
         if (ret != 0) {
             printf("write vod stream failed.\n");
             return;
@@ -128,7 +128,7 @@ static void write_only_audio_vod() {
         aac_len = fread(aac_buf, 1, max_size, aac_file);
         fclose(aac_file);
 
-        ret = oss_media_ts_stream_write(NULL, 0, aac_buf, aac_len, stream);
+        ret = oss_media_hls_stream_write(NULL, 0, aac_buf, aac_len, stream);
         if (ret != 0) {
             printf("write vod stream failed.\n");
             return;
@@ -140,21 +140,21 @@ static void write_only_audio_vod() {
         aac_len = fread(aac_buf, 1, max_size, aac_file);
         fclose(aac_file);
 
-        ret = oss_media_ts_stream_write(NULL, 0, aac_buf, aac_len, stream);
+        ret = oss_media_hls_stream_write(NULL, 0, aac_buf, aac_len, stream);
         if (ret != 0) {
             printf("write vod stream failed.\n");
             return;
         }        
     }
 
-    ret = oss_media_ts_stream_close(stream);
+    ret = oss_media_hls_stream_close(stream);
     if (ret != 0) {
         printf("close vod stream failed.\n");
         return;
     }
 
     free(aac_buf);
-    printf("convert aac to TS vod succeeded\n");
+    printf("convert aac to HLS vod succeeded\n");
 }
 
 static void write_video_audio_vod() {
@@ -164,8 +164,8 @@ static void write_video_audio_vod() {
     uint8_t *h264_buf, *aac_buf;
     int h264_len, aac_len;
     
-    oss_media_ts_stream_option_t option;
-    oss_media_ts_stream_t *stream = NULL;
+    oss_media_hls_stream_option_t option;
+    oss_media_hls_stream_t *stream = NULL;
 
     option.is_live = 0;
     option.bucket_name = SAMPLE_BUCKET_NAME;
@@ -175,9 +175,9 @@ static void write_video_audio_vod() {
     option.audio_sample_rate = 24000;
     option.hls_time = 5;
     
-    stream = oss_media_ts_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &option);
     if (stream == NULL) {
-        printf("open ts stream failed.\n");
+        printf("open hls stream failed.\n");
         return;
     }
 
@@ -192,7 +192,7 @@ static void write_video_audio_vod() {
         aac_len = fread(aac_buf, 1, max_size, aac_file);
         fclose(aac_file);
 
-        ret = oss_media_ts_stream_write(h264_buf, h264_len, 
+        ret = oss_media_hls_stream_write(h264_buf, h264_len, 
                 aac_buf, aac_len, stream);
         if (ret != 0) {
             printf("write vod stream failed.\n");
@@ -209,7 +209,7 @@ static void write_video_audio_vod() {
         aac_len = fread(aac_buf, 1, max_size, aac_file);
         fclose(aac_file);
 
-        ret = oss_media_ts_stream_write(h264_buf, h264_len, 
+        ret = oss_media_hls_stream_write(h264_buf, h264_len, 
                 aac_buf, aac_len, stream);
         if (ret != 0) {
             printf("write vod stream failed.\n");
@@ -226,7 +226,7 @@ static void write_video_audio_vod() {
         aac_len = fread(aac_buf, 1, max_size, aac_file);
         fclose(aac_file);
 
-        ret = oss_media_ts_stream_write(h264_buf, h264_len, 
+        ret = oss_media_hls_stream_write(h264_buf, h264_len, 
                 aac_buf, aac_len, stream);
         if (ret != 0) {
             printf("write vod stream failed.\n");
@@ -234,7 +234,7 @@ static void write_video_audio_vod() {
         }        
     }
 
-    ret = oss_media_ts_stream_close(stream);
+    ret = oss_media_hls_stream_close(stream);
     if (ret != 0) {
         printf("close vod stream failed.\n");
         return;
@@ -242,7 +242,7 @@ static void write_video_audio_vod() {
 
     free(h264_buf);
     free(aac_buf);
-    printf("convert H.264 and aac to TS vod succeeded\n");
+    printf("convert H.264 and aac to HLS vod succeeded\n");
 }
 
 static void write_video_audio_live() {
@@ -252,8 +252,8 @@ static void write_video_audio_live() {
     uint8_t *h264_buf, *aac_buf;
     int h264_len, aac_len;
     
-    oss_media_ts_stream_option_t option;
-    oss_media_ts_stream_t *stream = NULL;
+    oss_media_hls_stream_option_t option;
+    oss_media_hls_stream_t *stream = NULL;
 
     option.is_live = 1;
     option.bucket_name = SAMPLE_BUCKET_NAME;
@@ -264,9 +264,9 @@ static void write_video_audio_live() {
     option.hls_time = 5;
     option.hls_list_size = 5;
     
-    stream = oss_media_ts_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &option);
     if (stream == NULL) {
-        printf("open ts stream failed.\n");
+        printf("open hls stream failed.\n");
         return;
     }
 
@@ -293,7 +293,7 @@ static void write_video_audio_live() {
         aac_len = fread(aac_buf, 1, max_size, aac_file);
         fclose(aac_file);
 
-        ret = oss_media_ts_stream_write(h264_buf, h264_len, 
+        ret = oss_media_hls_stream_write(h264_buf, h264_len, 
                 aac_buf, aac_len, stream);
         if (ret != 0) {
             printf("write live stream failed.\n");
@@ -303,7 +303,7 @@ static void write_video_audio_live() {
         sleep(8);
     } while (video_index++ < 9 && audio_index++ < 9);
 
-    ret = oss_media_ts_stream_close(stream);
+    ret = oss_media_hls_stream_close(stream);
     if (ret != 0) {
         printf("close live stream failed.\n");
         return;
@@ -311,11 +311,11 @@ static void write_video_audio_live() {
 
     free(h264_buf);
     free(aac_buf);
-    printf("convert H.264 and aac to TS live succeeded\n");
+    printf("convert H.264 and aac to HLS live succeeded\n");
 }
 
 static int usage() {
-    printf("Usage: oss_media_ts_stream_example type\n"
+    printf("Usage: oss_media_hls_stream_example type\n"
            "type:\n"
            "     only_video_vod\n"
            "     only_audio_vod\n"

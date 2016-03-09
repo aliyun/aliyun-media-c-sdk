@@ -1,13 +1,13 @@
 #include <string.h>
 #include <math.h>
 #include <stdio.h>
-#include "oss_media_ts.h"
+#include "oss_media_hls.h"
 #include "oss_media_client.h"
 
 /* delay: 700ms */
-#define OSS_MEDIA_TS_HLS_DELAY (700 * 90)
+#define OSS_MEDIA_HLS_HLS_DELAY (700 * 90)
 
-#define OSS_MEDIA_TS_HEADER_LENGTH 5
+#define OSS_MEDIA_HLS_HEADER_LENGTH 5
 #define OSS_MEDIA_PAT_PID 0
 #define OSS_MEDIA_PMT_PID 4097
 
@@ -39,7 +39,7 @@ static uint32_t calculate_crc32(uint8_t *data, int32_t length) {
     return crc32;
 }
 
-static uint8_t *oss_media_ts_write_pcr(uint8_t *p, uint64_t pcr) {
+static uint8_t *oss_media_hls_write_pcr(uint8_t *p, uint64_t pcr) {
     *p++ = pcr >> 25;
     *p++ = pcr >> 17;
     *p++ = pcr >> 9;
@@ -50,7 +50,7 @@ static uint8_t *oss_media_ts_write_pcr(uint8_t *p, uint64_t pcr) {
     return p;
 }
 
-static uint8_t *oss_media_ts_write_pts(uint8_t *p, uint32_t fb, uint64_t pts) {
+static uint8_t *oss_media_hls_write_pts(uint8_t *p, uint32_t fb, uint64_t pts) {
     uint32_t val;
     
     val = fb << 4 | (((pts >> 30) & 0x07) << 1) | 1;
@@ -67,10 +67,10 @@ static uint8_t *oss_media_ts_write_pts(uint8_t *p, uint32_t fb, uint64_t pts) {
     return p;
 }
 
-static void oss_media_ts_encrypt_packet(oss_media_ts_file_t *file, uint8_t *packet) {
+static void oss_media_hls_encrypt_packet(oss_media_hls_file_t *file, uint8_t *packet) {
 }
 
-static uint8_t *oss_media_ts_write_hls_header(uint8_t *p, int16_t pid)
+static uint8_t *oss_media_hls_write_hls_header(uint8_t *p, int16_t pid)
 {
     uint8_t sync_byte = 0x47;
     uint8_t transport_error_indicator = 0;
@@ -92,9 +92,9 @@ static uint8_t *oss_media_ts_write_hls_header(uint8_t *p, int16_t pid)
     return p;
 }
 
-static uint8_t* oss_media_ts_set_crc32(uint8_t *start, uint8_t *p) {
-    uint32_t crc32 = calculate_crc32(start + OSS_MEDIA_TS_HEADER_LENGTH,
-            p - start - OSS_MEDIA_TS_HEADER_LENGTH);
+static uint8_t* oss_media_hls_set_crc32(uint8_t *start, uint8_t *p) {
+    uint32_t crc32 = calculate_crc32(start + OSS_MEDIA_HLS_HEADER_LENGTH,
+            p - start - OSS_MEDIA_HLS_HEADER_LENGTH);
     *p++ = crc32 >> 24;
     *p++ = (crc32 >> 16) & 0xff;
     *p++ = (crc32 >> 8) & 0xff;
@@ -103,8 +103,8 @@ static uint8_t* oss_media_ts_set_crc32(uint8_t *start, uint8_t *p) {
     return p;
 }
 
-static int oss_media_handle_file(oss_media_ts_file_t *file) {
-    if (file->buffer->end - file->buffer->pos < OSS_MEDIA_TS_PACKET_SIZE) {
+static int oss_media_handle_file(oss_media_hls_file_t *file) {
+    if (file->buffer->end - file->buffer->pos < OSS_MEDIA_HLS_PACKET_SIZE) {
         if (file->options.handler_func(file) != 0) {
             aos_error_log("execute handler func failed.");
             return -1;
@@ -113,7 +113,7 @@ static int oss_media_handle_file(oss_media_ts_file_t *file) {
     return 0;
 }
 
-static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
+static int oss_media_hls_write_pat(oss_media_hls_file_t *file) {
     // write data to oss when buffer is full
     if (0 != oss_media_handle_file(file)) {
         aos_error_log("execute handler func failed.");
@@ -125,7 +125,7 @@ static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
     uint8_t *p = start;
 
     // HLS header
-    p = oss_media_ts_write_hls_header(p, OSS_MEDIA_PAT_PID);
+    p = oss_media_hls_write_hls_header(p, OSS_MEDIA_PAT_PID);
 
     // PAT body
     uint8_t section_syntax_indicator = 1;
@@ -158,18 +158,18 @@ static int oss_media_ts_write_pat(oss_media_ts_file_t *file) {
     *p++ = program_id & 0xFF;
 
     // set crc32
-    p = oss_media_ts_set_crc32(start, p);
+    p = oss_media_hls_set_crc32(start, p);
     
     // fill 0xFF
-    while (p - start < OSS_MEDIA_TS_PACKET_SIZE) {
+    while (p - start < OSS_MEDIA_HLS_PACKET_SIZE) {
         *p++ = 0xff;
     }
-    file->buffer->pos += OSS_MEDIA_TS_PACKET_SIZE;
+    file->buffer->pos += OSS_MEDIA_HLS_PACKET_SIZE;
     
     return 0;
 }
 
-static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
+static int oss_media_hls_write_pmt(oss_media_hls_file_t *file) {
     // write data to oss when buffer is full
     if (0 != oss_media_handle_file(file)) {
         aos_error_log("execute handler func failed.");
@@ -181,7 +181,7 @@ static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
     uint8_t *p = start;
 
     // HLS header
-    p = oss_media_ts_write_hls_header(p, OSS_MEDIA_PMT_PID);
+    p = oss_media_hls_write_hls_header(p, OSS_MEDIA_PMT_PID);
 
     // PMT body
     uint8_t table_id = 0x02;
@@ -246,24 +246,24 @@ static int oss_media_ts_write_pmt(oss_media_ts_file_t *file) {
     }
     
     // set CRC32
-    p = oss_media_ts_set_crc32(start, p);
+    p = oss_media_hls_set_crc32(start, p);
 
     // fill 0xFF
-    while (p - start < OSS_MEDIA_TS_PACKET_SIZE) {
+    while (p - start < OSS_MEDIA_HLS_PACKET_SIZE) {
         *p++ = 0xff;
     }
-    file->buffer->pos += OSS_MEDIA_TS_PACKET_SIZE;
+    file->buffer->pos += OSS_MEDIA_HLS_PACKET_SIZE;
 
     return 0;
 }
 
-static int oss_media_ts_write_pat_and_pmt(oss_media_ts_file_t *file) {
-    if (0 != oss_media_ts_write_pat(file)) {
+static int oss_media_hls_write_pat_and_pmt(oss_media_hls_file_t *file) {
+    if (0 != oss_media_hls_write_pat(file)) {
         aos_error_log("write pat table failed.");
         return -1;
     }
 
-    if (0 != oss_media_ts_write_pmt(file)) {
+    if (0 != oss_media_hls_write_pmt(file)) {
         aos_error_log("write pmt table failed.");
         return -1;
     }
@@ -271,16 +271,16 @@ static int oss_media_ts_write_pat_and_pmt(oss_media_ts_file_t *file) {
     if (file->options.encrypt) {
         uint8_t *pos;
         pos = &file->buffer->buf[file->buffer->pos];
-        pos -= OSS_MEDIA_TS_PACKET_SIZE;
-        oss_media_ts_encrypt_packet(file, pos);
-        pos -= OSS_MEDIA_TS_PACKET_SIZE;
-        oss_media_ts_encrypt_packet(file, pos);
+        pos -= OSS_MEDIA_HLS_PACKET_SIZE;
+        oss_media_hls_encrypt_packet(file, pos);
+        pos -= OSS_MEDIA_HLS_PACKET_SIZE;
+        oss_media_hls_encrypt_packet(file, pos);
     }
 
     return 0;
 }
 
-static int oss_media_ts_ossfile_handler(oss_media_ts_file_t *file) {
+static int oss_media_hls_ossfile_handler(oss_media_hls_file_t *file) {
     int64_t length;
     int64_t write_size;
 
@@ -302,22 +302,22 @@ static int oss_media_ts_ossfile_handler(oss_media_ts_file_t *file) {
     return 0;
 }
 
-static int oss_media_ts_need_write_pat_and_pmt(oss_media_ts_file_t *file) 
+static int oss_media_hls_need_write_pat_and_pmt(oss_media_hls_file_t *file) 
 {
     return file->frame_count % file->options.pat_interval_frame_count == 0;
 }
 
-static int oss_media_ts_ends_with(const char *str, const char *surfix) {
+static int oss_media_hls_ends_with(const char *str, const char *surfix) {
     return strncmp(str + strlen(str) - strlen(surfix), surfix, strlen(surfix)) == 0;
 }
 
-oss_media_ts_file_t* oss_media_ts_open(char *bucket_name,
+oss_media_hls_file_t* oss_media_hls_open(char *bucket_name,
                                        char *object_key,
                                        auth_fn_t auth_func)
 {
-    oss_media_ts_file_t* file;
+    oss_media_hls_file_t* file;
     
-    file = (oss_media_ts_file_t*)malloc(sizeof(oss_media_ts_file_t));
+    file = (oss_media_hls_file_t*)malloc(sizeof(oss_media_hls_file_t));
     
     file->file = oss_media_file_open(bucket_name, object_key, "a", auth_func);
     if (file->file == NULL) {
@@ -329,16 +329,16 @@ oss_media_ts_file_t* oss_media_ts_open(char *bucket_name,
     file->frame_count = 0;
     file->options.video_pid = OSS_MEDIA_DEFAULT_VIDEO_PID;
     file->options.audio_pid = OSS_MEDIA_DEFAULT_AUDIO_PID;
-    file->options.hls_delay_ms = OSS_MEDIA_TS_HLS_DELAY;
+    file->options.hls_delay_ms = OSS_MEDIA_HLS_HLS_DELAY;
     file->options.encrypt = 0;
-    file->options.handler_func = oss_media_ts_ossfile_handler;
+    file->options.handler_func = oss_media_hls_ossfile_handler;
     file->options.pat_interval_frame_count = OSS_MEDIA_PAT_INTERVAL_FRAME_COUNT;
     
-    file->buffer = (oss_media_ts_buf_t*)malloc(sizeof(oss_media_ts_buf_t));
+    file->buffer = (oss_media_hls_buf_t*)malloc(sizeof(oss_media_hls_buf_t));
     file->buffer->start = 0;
     file->buffer->pos = 0;
         
-    if (oss_media_ts_ends_with(object_key, OSS_MEDIA_M3U8_FILE_SURFIX)) {
+    if (oss_media_hls_ends_with(object_key, OSS_MEDIA_M3U8_FILE_SURFIX)) {
         file->buffer->buf = (uint8_t*)malloc(OSS_MEDIA_DEFAULT_WRITE_BUFFER / 32);
         file->buffer->end = OSS_MEDIA_DEFAULT_WRITE_BUFFER / 32;
     } else {
@@ -349,17 +349,17 @@ oss_media_ts_file_t* oss_media_ts_open(char *bucket_name,
     return file;
 }
 
-int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
-                             oss_media_ts_file_t *file)
+int oss_media_hls_write_frame(oss_media_hls_frame_t *frame,
+                             oss_media_hls_file_t *file)
 {
     uint32_t pes_size, header_size, body_size, in_size, stuff_size, flags;
-    uint8_t  packet[OSS_MEDIA_TS_PACKET_SIZE], *p, *base;
+    uint8_t  packet[OSS_MEDIA_HLS_PACKET_SIZE], *p, *base;
     uint32_t first;
     uint32_t pid;
     
     // write pat and pmt table
-    if (oss_media_ts_need_write_pat_and_pmt(file)) {
-        oss_media_ts_write_pat_and_pmt(file);
+    if (oss_media_hls_need_write_pat_and_pmt(file)) {
+        oss_media_hls_write_pat_and_pmt(file);
     }
     
     // get pid
@@ -373,7 +373,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
     }
 
     first = 1;
-    memset(packet, 0x00, OSS_MEDIA_TS_PACKET_SIZE);
+    memset(packet, 0x00, OSS_MEDIA_HLS_PACKET_SIZE);
     while (frame->pos < frame->end) {
         // flush if buffer is full.
         if (0 != oss_media_handle_file(file)) {
@@ -397,7 +397,7 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
                 *p++ = 7;                   // size
                 *p++ = 0x50;                // random access + pcr
                 
-                p = oss_media_ts_write_pcr(p, 
+                p = oss_media_hls_write_pcr(p, 
                         frame->dts - file->options.hls_delay_ms);
             }
             
@@ -425,11 +425,11 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
             *p++ = flags;              // flags
             *p++ = header_size;        // pes header size;
 
-            p = oss_media_ts_write_pts(p, flags >> 6, 
+            p = oss_media_hls_write_pts(p, flags >> 6, 
                     frame->pts + file->options.hls_delay_ms); 
 
             if (frame->stream_type == st_h264) {
-                p = oss_media_ts_write_pts(p, 1, 
+                p = oss_media_hls_write_pts(p, 1, 
                         frame->dts + file->options.hls_delay_ms); 
             }
             
@@ -462,13 +462,13 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
                 }
             }
             
-            memcpy(&packet[OSS_MEDIA_TS_PACKET_SIZE] - in_size, frame->pos, in_size);
+            memcpy(&packet[OSS_MEDIA_HLS_PACKET_SIZE] - in_size, frame->pos, in_size);
             frame->pos = frame->end;
         }
         
         // encrypt
         if (file->options.encrypt) {
-            oss_media_ts_encrypt_packet(file, packet);
+            oss_media_hls_encrypt_packet(file, packet);
         }
 
         memcpy(&file->buffer->buf[file->buffer->pos], packet, sizeof(packet));
@@ -479,9 +479,9 @@ int oss_media_ts_write_frame(oss_media_ts_frame_t *frame,
     return 0;
 }
 
-void oss_media_ts_begin_m3u8(int32_t max_duration, 
+void oss_media_hls_begin_m3u8(int32_t max_duration, 
                              int32_t sequence,
-                             oss_media_ts_file_t *file) 
+                             oss_media_hls_file_t *file) 
 {
     int len;
     static const char *header = "#EXTM3U\n"
@@ -496,15 +496,15 @@ void oss_media_ts_begin_m3u8(int32_t max_duration,
     file->buffer->pos += len;
 }
 
-void oss_media_ts_end_m3u8(oss_media_ts_file_t *file) {
+void oss_media_hls_end_m3u8(oss_media_hls_file_t *file) {
     static const char *end = "#EXT-X-ENDLIST";
     memcpy(&file->buffer->buf[file->buffer->pos], end, strlen(end));
     file->buffer->pos += strlen(end);
 }
 
-int oss_media_ts_write_m3u8(int size,
-                            oss_media_ts_m3u8_info_t m3u8[],
-                            oss_media_ts_file_t *file)
+int oss_media_hls_write_m3u8(int size,
+                            oss_media_hls_m3u8_info_t m3u8[],
+                            oss_media_hls_file_t *file)
 {
     int i;
     int len;
@@ -515,24 +515,24 @@ int oss_media_ts_write_m3u8(int size,
         file->buffer->pos += len;
     }
     
-    return oss_media_ts_flush(file);
+    return oss_media_hls_flush(file);
 }
 
-int oss_media_ts_flush(oss_media_ts_file_t *file) {
+int oss_media_hls_flush(oss_media_hls_file_t *file) {
     if (file->options.handler_func(file) != 0) {
         return -1;
     }
     return 0;
 }
 
-int oss_media_ts_close(oss_media_ts_file_t *file) {
+int oss_media_hls_close(oss_media_hls_file_t *file) {
     int ret = 0;
 
     if (NULL == file) {
         return 0;
     }
     
-    if (oss_media_ts_flush(file) != 0) {
+    if (oss_media_hls_flush(file) != 0) {
         aos_error_log("flush file failed.");
         ret = -1;
     }

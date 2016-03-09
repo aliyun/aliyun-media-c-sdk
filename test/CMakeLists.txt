@@ -12,8 +12,8 @@ set(TEST_SOURCE_FILES CuTest.c
 		      test_client.c
 		      test_server.c
 		      test_sts.c
-		      test_ts.c
-		      test_ts_stream.c
+		      test_hls.c
+		      test_hls_stream.c
 		      test_all.c)
 
 include_directories (${APR_INCLUDE_DIR})

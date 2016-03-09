@@ -2,7 +2,7 @@ PROJECT(oss_c_media_sdk)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
-set(CMAKE_VERSION 0.2.0)
+set(CMAKE_VERSION 1.0.0)
 
 option(ONLY_BUILD_CLIENT "only build client" OFF)
 option(ONLY_BUILD_SERVER "only build server" OFF)

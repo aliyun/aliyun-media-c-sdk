@@ -69,7 +69,7 @@ oss_media_file_t* oss_media_file_open(char *bucket_name,
                                       char *mode,
                                       auth_fn_t auth_func) 
 {
-    oss_media_file_t *file = malloc(sizeof(oss_media_file_t));
+    oss_media_file_t *file = (oss_media_file_t*)malloc(sizeof(oss_media_file_t));
     if (NULL == file) {
         aos_error_log("malloc a new file failed.\n");
         return NULL;
@@ -92,7 +92,7 @@ oss_media_file_t* oss_media_file_open(char *bucket_name,
     file->bucket_name = bucket_name;
     file->object_key = object_key;
 
-    if (0 != oss_media_file_stat(file, &(file->_stat)) ) {
+    if (0 != oss_media_file_stat(file, &(file->_stat))) {
         aos_error_log("stat file[%s] failed.\n", file->object_key);
         free(file);
         file = NULL;
