@@ -29,7 +29,8 @@
  - OSS C SDK
 
 ## 使用
- - 参考sample部分
+ - 示例程序：[参考sample部分](sample/)
+ - SDK文档：[阿里云OSS MEDIA SDK文档](https://help.aliyun.com/document_detail/oss/sdk/media-c-sdk/preface.html)
 
 ## 联系我们
 - [阿里云OSS官方网站](http://oss.aliyun.com)  
