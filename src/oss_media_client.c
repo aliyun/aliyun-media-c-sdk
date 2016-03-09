@@ -145,6 +145,9 @@ int oss_media_file_stat(oss_media_file_t *file, oss_media_file_stat_t *stat) {
         return 0;
     }
 
+    aos_error_log("head object[%s] failed. http code:%d, code:%s, msg:%s, req:%s",
+                  file->object_key, status->code, status->error_code,
+                  status->error_msg, status->req_id);
     aos_pool_destroy(pool);
     return -1;
 }

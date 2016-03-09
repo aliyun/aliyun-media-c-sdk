@@ -95,15 +95,13 @@ int run_all_tests(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     int exit_code;
-    if (aos_http_io_initialize(OSS_MEDIA_CLIENT_USER_AGENT, 0) != AOSE_OK) {
+    if (oss_media_init(AOS_LOG_OFF) != AOSE_OK) {
         exit(1);
     }
-    
-    aos_log_set_level(AOS_LOG_OFF);
+
     exit_code = run_all_tests(argc, argv);
 
-    //aos_http_io_deinitialize last
-    aos_http_io_deinitialize();
+    oss_media_destroy();
     
     return exit_code;
 }
