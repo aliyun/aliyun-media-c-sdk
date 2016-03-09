@@ -25,18 +25,18 @@ void test_ts_teardown(CuTest *tc) {
 }
 
 void test_calculate_crc32(CuTest *tc) {
-    uint8_t *data = "xi'an-chengdu-hangzhou-beijing";
+    char *data = "xi'an-chengdu-hangzhou-beijing";
 
-    uint32_t crc32 = calculate_crc32(data, strlen(data));
+    uint32_t crc32 = calculate_crc32((uint8_t*)data, strlen(data));
     CuAssertIntEquals(tc, -1266222823, crc32);
 
-    crc32 = calculate_crc32(data, strlen(data));
+    crc32 = calculate_crc32((uint8_t*)data, strlen(data));
     CuAssertIntEquals(tc, -1266222823, crc32);
 }
 
 void test_calculate_crc32_with_empty(CuTest *tc) {
-    uint8_t *data = "xi'an-chengdu-hangzhou-beijing";
-    uint32_t crc32 = calculate_crc32(data, 0);
+    char *data = "xi'an-chengdu-hangzhou-beijing";
+    uint32_t crc32 = calculate_crc32((uint8_t*)data, 0);
 
     CuAssertIntEquals(tc, 0xFFFFFFFF, crc32);
 }
@@ -561,8 +561,8 @@ void test_oss_media_ts_begin_m3u8(CuTest *tc) {
 
     char *expected = "#EXTM3U\n#EXT-X-TARGETDURATION:10\n"
                      "#EXT-X-MEDIA-SEQUENCE:2\n#EXT-X-VERSION:3\n";
-    char *result = &file->buffer->buf[file->buffer->start];
-    CuAssertStrnEquals(tc, expected, strlen(expected), result);
+    uint8_t *result = &file->buffer->buf[file->buffer->start];
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)result);
 
     oss_media_ts_close(file);
 }
@@ -576,8 +576,8 @@ void test_oss_media_ts_end_m3u8(CuTest *tc) {
     oss_media_ts_end_m3u8(file);
 
     char *expected = "#EXT-X-ENDLIST";
-    char *result = &file->buffer->buf[file->buffer->start];
-    CuAssertStrnEquals(tc, expected, strlen(expected), result);
+    uint8_t *result = &file->buffer->buf[file->buffer->start];
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)result);
 
     oss_media_ts_flush(file);
     delete_file(file->file);
@@ -624,8 +624,8 @@ void test_oss_media_ts_write_m3u8_with_one_m3u8(CuTest *tc) {
     CuAssertIntEquals(tc, 0, ret);
 
     char *expected = "#EXTINF:10.000,\n1.ts\n";
-    char *result = &file->buffer->buf[file->buffer->start];
-    CuAssertStrnEquals(tc, expected, strlen(expected), result);
+    uint8_t *result = &file->buffer->buf[file->buffer->start];
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)result);
 
     oss_media_ts_close(file);
 }
@@ -651,8 +651,8 @@ void test_oss_media_ts_write_m3u8_with_two_m3u8(CuTest *tc) {
     CuAssertIntEquals(tc, 0, ret);
     
     char *expected = "#EXTINF:10.000,\n1.ts\n#EXTINF:8.400,\n2.ts\n";
-    char *result = &file->buffer->buf[file->buffer->start];
-    CuAssertStrnEquals(tc, expected, strlen(expected), result);
+    uint8_t *result = &file->buffer->buf[file->buffer->start];
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)result);
 
     oss_media_ts_close(file);
 }

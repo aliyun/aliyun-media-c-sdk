@@ -8,7 +8,7 @@ option(ONLY_BUILD_CLIENT "only build client" OFF)
 option(ONLY_BUILD_SERVER "only build server" OFF)
 
 # default C / CXX flags
-set(CMAKE_C_FLAGS " -g -ggdb -O0 -Wall -Werror -fpic -fPIC -D_LARGEFILE64_SOURCE")
+set(CMAKE_C_FLAGS " -g -ggdb -O0 -Werror -fpic -fPIC -D_LARGEFILE64_SOURCE")
 set(CMAKE_CXX_FLAGS " -g -ggdb -O0 -Werror -fpic -fPIC -D_LARGEFILE64_SOURCE")
 
 set(CMAKE_C_FLAGS_DEBUG " -g -ggdb -O0 -Werror -fpic -fPIC -D_LARGEFILE64_SOURCE")

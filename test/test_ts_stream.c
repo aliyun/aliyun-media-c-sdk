@@ -218,18 +218,18 @@ void test_oss_media_write_m3u8_for_vod(CuTest *tc) {
     ret = oss_media_write_m3u8(8.9, stream);
     CuAssertIntEquals(tc, 0, ret);
     
-    char *content = stream->m3u8_file->buffer->buf;
+    uint8_t *content = stream->m3u8_file->buffer->buf;
     char *expected = "#EXTM3U\n#EXT-X-TARGETDURATION:10\n#"
                      "EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-VERSION:3\n"
                      "#EXTINF:8.900,\nhttp://bucket-1.oss.abc.com/dir/test2-0.ts\n";
-    CuAssertStrnEquals(tc, expected, strlen(expected), content);
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)content);
 
     ret = oss_media_write_m3u8(7.2, stream);
     CuAssertIntEquals(tc, 0, ret);
 
     content = stream->m3u8_file->buffer->buf;
     expected = "#EXTINF:7.200,\nhttp://bucket-1.oss.abc.com/dir/test2-0.ts\n";
-    CuAssertStrnEquals(tc, expected, strlen(expected), content);
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)content);
 
     delete_file(stream->m3u8_file->file);
     oss_media_ts_stream_close(stream);    
@@ -257,11 +257,11 @@ void test_oss_media_write_m3u8_for_live(CuTest *tc) {
     ret = oss_media_write_m3u8(8.9, stream);
     CuAssertIntEquals(tc, 0, ret);
     
-    char *content = stream->m3u8_file->buffer->buf;
+    uint8_t *content = stream->m3u8_file->buffer->buf;
     char *expected = "#EXTM3U\n#EXT-X-TARGETDURATION:10\n#"
                      "EXT-X-MEDIA-SEQUENCE:0\n#EXT-X-VERSION:3\n"
                      "#EXTINF:8.900,\nhttp://bucket-1.oss.abc.com/dir/test2-0.ts\n";
-    CuAssertStrnEquals(tc, expected, strlen(expected), content);
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)content);
 
     close_and_open_new_file(stream);
     stream->ts_file->file->endpoint = "oss.abc.com";
@@ -275,7 +275,7 @@ void test_oss_media_write_m3u8_for_live(CuTest *tc) {
                "#EXTINF:8.900,\nhttp://bucket-1.oss.abc.com/dir/test2-0.ts\n"
                "#EXTINF:7.200,\nhttp://bucket-1.oss.abc.com/dir/test2-1.ts\n";
 
-    CuAssertStrnEquals(tc, expected, strlen(expected), content);
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)content);
 
     close_and_open_new_file(stream);
     stream->ts_file->file->endpoint = "oss.abc.com";
@@ -295,7 +295,7 @@ void test_oss_media_write_m3u8_for_live(CuTest *tc) {
                "#EXTINF:7.200,\nhttp://bucket-1.oss.abc.com/dir/test2-1.ts\n"
                "#EXTINF:5.300,\nhttp://bucket-1.oss.abc.com/dir/test2-2.ts\n"
                "#EXTINF:5.600,\nhttp://bucket-1.oss.abc.com/dir/test2-3.ts\n";
-    CuAssertStrnEquals(tc, expected, strlen(expected), content);
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)content);
 
     delete_file(stream->m3u8_file->file);
     oss_media_ts_stream_close(stream);    

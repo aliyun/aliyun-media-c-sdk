@@ -59,7 +59,7 @@ static void write_file() {
     // open file
     file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "w", auth_func);
     if (!file) {
-        printf("open media file[%s] failed\n", file->object_key);
+        printf("open media file[%s] failed\n", g_filename);
         return;
     }
 
@@ -100,7 +100,6 @@ static void append_file() {
 
     // open file
     if(!file) {
-        oss_media_file_close(file);
         printf("open media file failed\n");
         return;
     }
@@ -132,7 +131,6 @@ static void read_file() {
     // open file
     file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "r", auth_func);
     if (!file) {
-        oss_media_file_close(file);
         printf("open media file failed\n");
         return;
     }
@@ -175,7 +173,6 @@ static void seek_file() {
     // open file
     file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "r", auth_func);
     if (!file) {
-        oss_media_file_close(file);
         printf("open media file failed\n");
         return;
     }
@@ -228,7 +225,6 @@ static void error_code() {
     // open file
     file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "a", auth_func);
     if (!file) {
-        oss_media_file_close(file);
         printf("open media file failed\n");
         return;
     }
@@ -285,8 +281,6 @@ static void perf(int loop) {
 
     file = oss_media_file_open(SAMPLE_BUCKET_NAME, g_filename, "a", auth_func);
     if (!file) {
-        oss_media_file_close(file);
-
         printf("open media file failed\n");
         return;
     }

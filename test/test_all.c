@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    aos_log_level = AOS_LOG_OFF;
+    aos_log_set_level(AOS_LOG_OFF);
     exit_code = run_all_tests(argc, argv);
 
     //aos_http_io_deinitialize last
