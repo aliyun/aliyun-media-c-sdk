@@ -57,7 +57,7 @@ static int is_readable(oss_media_file_t *file) {
 int oss_media_init(aos_log_level_e log_level) {
     aos_log_set_level(log_level);
     aos_log_set_output(NULL);
-    return aos_http_io_initialize(0);
+    return aos_http_io_initialize(OSS_MEDIA_CLIENT_USER_AGENT, 0);
 }
 
 void oss_media_destroy() {
@@ -69,7 +69,7 @@ oss_media_file_t* oss_media_file_open(char *bucket_name,
                                       char *mode,
                                       auth_fn_t auth_func) 
 {
-    oss_media_file_t *file = malloc(sizeof(oss_media_file_t));
+    oss_media_file_t *file = (oss_media_file_t*)malloc(sizeof(oss_media_file_t));
     if (NULL == file) {
         aos_error_log("malloc a new file failed.\n");
         return NULL;
@@ -92,7 +92,7 @@ oss_media_file_t* oss_media_file_open(char *bucket_name,
     file->bucket_name = bucket_name;
     file->object_key = object_key;
 
-    if (0 != oss_media_file_stat(file, &(file->_stat)) ) {
+    if (0 != oss_media_file_stat(file, &(file->_stat))) {
         aos_error_log("stat file[%s] failed.\n", file->object_key);
         free(file);
         file = NULL;
@@ -145,6 +145,9 @@ int oss_media_file_stat(oss_media_file_t *file, oss_media_file_stat_t *stat) {
         return 0;
     }
 
+    aos_error_log("head object[%s] failed. http code:%d, code:%s, msg:%s, req:%s",
+                  file->object_key, status->code, status->error_code,
+                  status->error_msg, status->req_id);
     aos_pool_destroy(pool);
     return -1;
 }
@@ -163,7 +166,7 @@ int64_t oss_media_file_seek(oss_media_file_t *file, int64_t offset) {
         return -1;
     }
     if (offset < 0 || offset >= file->_stat.length) {
-        aos_error_log("offset[%ld] is invalidate, file pos[%ld]\n", 
+        aos_error_log("offset[%" PRId64 "] is invalidate, file pos[%" PRId64 "]\n", 
                       offset, file->_stat.length);
         return -1;
     }
@@ -207,7 +210,7 @@ int64_t oss_media_file_read(oss_media_file_t *file, void *buf, int64_t nbyte) {
 
     end = (file->_stat.length > 0 && file->_stat.pos + nbyte > file->_stat.length) ? 
           file->_stat.length - 1 : file->_stat.pos + nbyte - 1;
-    range = apr_psprintf(pool, "bytes=%ld-%ld", file->_stat.pos, end);
+    range = apr_psprintf(pool, "bytes=%" PRId64 "-%" PRId64, file->_stat.pos, end);
 
     req_headers = aos_table_make(pool, 1);
     apr_table_set(req_headers, "Range", range);
@@ -219,7 +222,7 @@ int64_t oss_media_file_read(oss_media_file_t *file, void *buf, int64_t nbyte) {
 
     if (!aos_status_is_ok(status)) {
         aos_error_log("get object failed. request_id:%s, code:%d, "
-                      "error_code:%d, error_message:%s",
+                      "error_code:%s, error_message:%s",
                       status->req_id, status->code, status->error_code,
                       status->error_msg);
         aos_pool_destroy(pool);
@@ -277,7 +280,7 @@ int64_t oss_media_file_write(oss_media_file_t *file, const void *buf, int64_t nb
 
         if (!aos_status_is_ok(status)) {
             aos_error_log("put object failed. request_id:%s, code:%d, "
-                          "error_code:%d, error_message:%s",
+                          "error_code:%s, error_message:%s",
                           status->req_id, status->code, status->error_code,
                           status->error_msg);
             aos_pool_destroy(pool);
@@ -292,7 +295,7 @@ int64_t oss_media_file_write(oss_media_file_t *file, const void *buf, int64_t nb
 
         if (!aos_status_is_ok(status)) {
             aos_error_log("append object failed. request_id:%s, code:%d, "
-                          "error_code:%d, error_message:%s",
+                          "error_code:%s, error_message:%s",
                           status->req_id, status->code, status->error_code,
                           status->error_msg);
             aos_pool_destroy(pool);

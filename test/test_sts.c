@@ -8,8 +8,7 @@
 #include <oss_c_sdk/aos_status.h>
 
 static void init_media_config(oss_media_config_t *config);
-static int64_t write_file(const char* key, oss_media_config_t *config);
-static void* delete_file(oss_media_file_t *file);
+static void delete_file(oss_media_file_t *file);
 static void send_token_to_client(oss_media_token_t token);
 static void clear_client_token();
 static void auth_func(oss_media_file_t *file);
@@ -236,41 +235,6 @@ static void auth_func(oss_media_file_t *file) {
     file->expiration = time(NULL) + 300;
 }
 
-static int64_t write_file(const char* key, oss_media_config_t *config) {
-    aos_pool_t *p;
-    aos_string_t bucket;
-    aos_string_t object;
-    int is_cname = 0;
-    aos_table_t *headers;
-    aos_table_t *resp_headers;
-    oss_request_options_t *options;
-    aos_list_t buffer;
-    aos_buf_t *content;
-    char *str = "test oss c sdk";
-    aos_status_t *s;
-
-    aos_pool_create(&p, NULL);
-    options = oss_request_options_create(p);
-    options->config = oss_config_create(options->pool);
-    aos_str_set(&options->config->endpoint, config->endpoint);
-    aos_str_set(&options->config->access_key_id, config->access_key_id);
-    aos_str_set(&options->config->access_key_secret, config->access_key_secret);
-    options->config->is_cname = config->is_cname;
-    options->ctl = aos_http_controller_create(options->pool, 0);    
-    headers = aos_table_make(p, 0);
-    aos_str_set(&bucket, TEST_BUCKET_NAME);
-    aos_str_set(&object, key);
-
-    aos_list_init(&buffer);
-    content = aos_buf_pack(options->pool, str, strlen(str));
-    aos_list_add_tail(&content->node, &buffer);
-
-    oss_put_object_from_buffer(options, &bucket, &object, 
-                               &buffer, headers, &resp_headers);    
-    
-    aos_pool_destroy(p);
-}
-
 static void init_media_config(oss_media_config_t *config) {
     config->endpoint = TEST_OSS_ENDPOINT;
     config->access_key_id = TEST_ACCESS_KEY_ID;
@@ -279,11 +243,10 @@ static void init_media_config(oss_media_config_t *config) {
     config->is_cname = 0;
 }
 
-static void* delete_file(oss_media_file_t *file) {
+static void delete_file(oss_media_file_t *file) {
     aos_pool_t *p;
     aos_string_t bucket;
     aos_string_t object;
-    int is_oss_domain = 1;
     oss_request_options_t *options;
     aos_table_t *resp_headers;
 

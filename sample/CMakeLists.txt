@@ -16,12 +16,12 @@ find_library(RT_LIBRARY NAMES rt)
 
 IF (NOT ONLY_BUILD_SERVER)
    set(CLIENT_SAMPLE_SRC config.c client_sample.c)
-   set(TS_SAMPLE_SRC config.c ts_sample.c)
-   set(TS_STREAM_SAMPLE_SRC config.c ts_stream_sample.c)
+   set(TS_SAMPLE_SRC config.c hls_sample.c)
+   set(TS_STREAM_SAMPLE_SRC config.c hls_stream_sample.c)
 
    set(CLIENT_SAMPLE_BIN client_sample)
-   set(TS_SAMPLE_BIN ts_sample)
-   set(TS_STREAM_SAMPLE_BIN ts_stream_sample)
+   set(TS_SAMPLE_BIN hls_sample)
+   set(TS_STREAM_SAMPLE_BIN hls_stream_sample)
 
    add_executable(${CLIENT_SAMPLE_BIN} ${CLIENT_SAMPLE_SRC})
    add_executable(${TS_SAMPLE_BIN} ${TS_SAMPLE_SRC})

@@ -6,7 +6,7 @@
 #include <oss_c_sdk/aos_status.h>
 
 static void init_media_config(oss_media_config_t *config);
-static int64_t write_file(const char* key, oss_media_config_t *config);
+static void write_file(const char* key, oss_media_config_t *config);
 static void clear_bucket(oss_media_config_t *config);
 
 void test_server_setup(CuTest *tc) {
@@ -144,7 +144,7 @@ void test_create_bucket_lifecycle_failed(CuTest *tc) {
 }
 
 void test_get_bucket_lifecycle_succeeded(CuTest *tc) {
-    int ret, i;    
+    int ret;
     oss_media_lifecycle_rules_t *rules = NULL;
     oss_media_config_t config;
     
@@ -170,7 +170,7 @@ void test_get_bucket_lifecycle_succeeded(CuTest *tc) {
 }
 
 void test_get_bucket_lifecycle_failed(CuTest *tc) {
-    int ret, i;
+    int ret;
     oss_media_lifecycle_rules_t *rules = NULL;
     oss_media_config_t config;
     
@@ -295,8 +295,6 @@ void test_list_files_succeeded_with_no_file(CuTest *tc) {
     int ret;
     oss_media_config_t config;
     oss_media_files_t *file_list = NULL;
-    char *file1 = NULL;
-    char *file2 = NULL;
     
     init_media_config(&config);
 
@@ -319,8 +317,6 @@ void test_list_files_failed(CuTest *tc) {
     int ret;
     oss_media_config_t config;
     oss_media_files_t *file_list = NULL;
-    char *file1 = NULL;
-    char *file2 = NULL;
     
     init_media_config(&config);
 
@@ -335,29 +331,28 @@ void test_list_files_failed(CuTest *tc) {
 }
 
 static void clear_bucket(oss_media_config_t *config) {
+    int i;
+
     oss_media_files_t *file_list = oss_media_create_files();
 
-    int ret = oss_media_list_files(config, TEST_BUCKET_NAME, file_list);
-    int i;
+    oss_media_list_files(config, TEST_BUCKET_NAME, file_list);
     for (i = 0; i < file_list->size; i++) {
         oss_media_delete_file(config, TEST_BUCKET_NAME, file_list->file_names[i]);
     }
     oss_media_free_files(file_list);
 }
 
-static int64_t write_file(const char* key, oss_media_config_t *config) {
+static void write_file(const char* key, oss_media_config_t *config) {
     aos_pool_t *p = NULL;
     aos_string_t bucket;
     aos_string_t object;
-    int is_oss_domain = 1;
     aos_table_t *headers = NULL;
     aos_table_t *resp_headers = NULL;
     oss_request_options_t *options = NULL;
     aos_list_t buffer;
     aos_buf_t *content = NULL;
     char *str = "test oss c sdk";
-    aos_status_t *s = NULL;
-
+    
     aos_pool_create(&p, NULL);
     options = oss_request_options_create(p);
     options->config = oss_config_create(options->pool);

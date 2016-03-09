@@ -1,14 +1,14 @@
 #include "CuTest.h"
 #include "test.h"
 #include "config.h"
-#include "src/oss_media_ts.c"
+#include "src/oss_media_hls.c"
 #include <oss_c_sdk/aos_define.h>
 
 extern void delete_file(oss_media_file_t *file);
 static void auth_func(oss_media_file_t *file);
-static int oss_media_ts_fake_handler(oss_media_ts_file_t *file);
+static int oss_media_hls_fake_handler(oss_media_hls_file_t *file);
 
-void test_ts_setup(CuTest *tc) {
+void test_hls_setup(CuTest *tc) {
     aos_pool_t *p;
     aos_pool_create(&p, NULL);
     
@@ -17,7 +17,7 @@ void test_ts_setup(CuTest *tc) {
     aos_pool_destroy(p);
 }
 
-void test_ts_teardown(CuTest *tc) {
+void test_hls_teardown(CuTest *tc) {
     aos_pool_t *p;
     aos_pool_create(&p, NULL);
     apr_dir_remove(TEST_DIR"/data/", p);
@@ -25,28 +25,28 @@ void test_ts_teardown(CuTest *tc) {
 }
 
 void test_calculate_crc32(CuTest *tc) {
-    uint8_t *data = "xi'an-chengdu-hangzhou-beijing";
+    char *data = "xi'an-chengdu-hangzhou-beijing";
 
-    uint32_t crc32 = calculate_crc32(data, strlen(data));
+    uint32_t crc32 = calculate_crc32((uint8_t*)data, strlen(data));
     CuAssertIntEquals(tc, -1266222823, crc32);
 
-    crc32 = calculate_crc32(data, strlen(data));
+    crc32 = calculate_crc32((uint8_t*)data, strlen(data));
     CuAssertIntEquals(tc, -1266222823, crc32);
 }
 
 void test_calculate_crc32_with_empty(CuTest *tc) {
-    uint8_t *data = "xi'an-chengdu-hangzhou-beijing";
-    uint32_t crc32 = calculate_crc32(data, 0);
+    char *data = "xi'an-chengdu-hangzhou-beijing";
+    uint32_t crc32 = calculate_crc32((uint8_t*)data, 0);
 
     CuAssertIntEquals(tc, 0xFFFFFFFF, crc32);
 }
 
-void test_oss_media_ts_write_pcr(CuTest *tc) {
+void test_oss_media_hls_write_pcr(CuTest *tc) {
     uint8_t *p = malloc(6);
     uint64_t pcr = 2345678901;
     uint8_t *start = p;
 
-    p = oss_media_ts_write_pcr(p, pcr);
+    p = oss_media_hls_write_pcr(p, pcr);
 
     CuAssertIntEquals(tc, 6, p - start);
     CuAssertIntEquals(tc, 69, start[0]);
@@ -59,13 +59,13 @@ void test_oss_media_ts_write_pcr(CuTest *tc) {
     free(start);
 }
 
-void test_oss_media_ts_write_pts(CuTest *tc) {
+void test_oss_media_hls_write_pts(CuTest *tc) {
     uint8_t *p = malloc(5);
     uint32_t fb = 1;
     uint64_t pts = 2345678901;
 
     uint8_t *start = p;
-    p = oss_media_ts_write_pts(p, fb, pts);
+    p = oss_media_hls_write_pts(p, fb, pts);
 
     CuAssertIntEquals(tc, 5, p - start);
     CuAssertIntEquals(tc, 21, start[0]);
@@ -77,15 +77,15 @@ void test_oss_media_ts_write_pts(CuTest *tc) {
     free(start);
 }
 
-void test_oss_media_ts_encrypt_packet(CuTest *tc) {
+void test_oss_media_hls_encrypt_packet(CuTest *tc) {
     CuAssertTrue(tc, 0);
 }
 
-void test_oss_media_ts_write_hls_header(CuTest *tc) {
+void test_oss_media_hls_write_hls_header(CuTest *tc) {
     uint8_t *p = malloc(5);
     uint8_t *start = p;
 
-    p = oss_media_ts_write_hls_header(p, 0);
+    p = oss_media_hls_write_hls_header(p, 0);
     
     CuAssertIntEquals(tc, 5, p - start);
     CuAssertIntEquals(tc, 0x47, start[0]);
@@ -97,7 +97,7 @@ void test_oss_media_ts_write_hls_header(CuTest *tc) {
     free(start);
 }
 
-void test_oss_media_ts_set_crc32(CuTest *tc) {
+void test_oss_media_hls_set_crc32(CuTest *tc) {
     uint8_t *p = malloc(21);
     uint8_t *start = p;
     uint8_t *end;
@@ -121,7 +121,7 @@ void test_oss_media_ts_set_crc32(CuTest *tc) {
     *p++ = 0x01;
 
     end = p;
-    p = oss_media_ts_set_crc32(start, p);
+    p = oss_media_hls_set_crc32(start, p);
     
     CuAssertIntEquals(tc, 4, p - end);
     CuAssertIntEquals(tc, 0x2e, end[0]);
@@ -137,18 +137,18 @@ void test_oss_media_handle_file_with_not_called(CuTest *tc) {
     uint8_t *p = malloc(21);
     uint8_t *start = p;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE;
     ret = oss_media_handle_file(file);
     CuAssertIntEquals(tc, 0, ret);
     CuAssertIntEquals(tc, 0, file->frame_count);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
     free(start);
 }
 
@@ -157,70 +157,70 @@ void test_oss_media_handle_file_with_called_succeeded(CuTest *tc) {
     uint8_t *p = malloc(21);
     uint8_t *start = p;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 0;
     ret = oss_media_handle_file(file);
 
     CuAssertIntEquals(tc, 0, ret);
     CuAssertIntEquals(tc, 1, file->frame_count);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
     free(start);
 }
 
 void test_oss_media_handle_file_with_called_failed(CuTest *tc) {
     int ret = 0;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 1;
     ret = oss_media_handle_file(file);
     CuAssertIntEquals(tc, -1, ret);
     CuAssertIntEquals(tc, 2, file->frame_count);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_pat_with_failed(CuTest *tc) {
+void test_oss_media_hls_write_pat_with_failed(CuTest *tc) {
     int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
 
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 1;
-    ret = oss_media_ts_write_pat(file);
+    ret = oss_media_hls_write_pat(file);
     CuAssertIntEquals(tc, -1, ret);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_pat_with_succeeded(CuTest *tc) {
+void test_oss_media_hls_write_pat_with_succeeded(CuTest *tc) {
     int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
     
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 0;
-    ret = oss_media_ts_write_pat(file);
+    ret = oss_media_hls_write_pat(file);
     CuAssertIntEquals(tc, 0, ret);
 
     uint8_t *p = file->buffer->buf;
@@ -248,45 +248,45 @@ void test_oss_media_ts_write_pat_with_succeeded(CuTest *tc) {
     CuAssertIntEquals(tc, 0x19, *p++);
     CuAssertIntEquals(tc, 0x05, *p++);
     
-    while (p < start + OSS_MEDIA_TS_PACKET_SIZE) {
+    while (p < start + OSS_MEDIA_HLS_PACKET_SIZE) {
         CuAssertIntEquals(tc, 0xff, *p++);
     }
 
-    CuAssertIntEquals(tc, file->buffer->start + OSS_MEDIA_TS_PACKET_SIZE,
+    CuAssertIntEquals(tc, file->buffer->start + OSS_MEDIA_HLS_PACKET_SIZE,
                       file->buffer->pos);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_pmt_with_failed(CuTest *tc) {
+void test_oss_media_hls_write_pmt_with_failed(CuTest *tc) {
     int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
 
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 1;
-    ret = oss_media_ts_write_pmt(file);
+    ret = oss_media_hls_write_pmt(file);
     CuAssertIntEquals(tc, -1, ret);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_pmt_with_succeeded(CuTest *tc) {
+void test_oss_media_hls_write_pmt_with_succeeded(CuTest *tc) {
     int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
     
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 0;
-    ret = oss_media_ts_write_pmt(file);
+    ret = oss_media_hls_write_pmt(file);
     CuAssertIntEquals(tc, 0, ret);
 
     uint8_t *p = file->buffer->buf;
@@ -324,99 +324,99 @@ void test_oss_media_ts_write_pmt_with_succeeded(CuTest *tc) {
     CuAssertIntEquals(tc, 0xb9, *p++);
     CuAssertIntEquals(tc, 0x9b, *p++);
     
-    while (p < start + OSS_MEDIA_TS_PACKET_SIZE) {
+    while (p < start + OSS_MEDIA_HLS_PACKET_SIZE) {
         CuAssertIntEquals(tc, 0xff, *p++);
     }
 
-    CuAssertIntEquals(tc, file->buffer->start + OSS_MEDIA_TS_PACKET_SIZE,
+    CuAssertIntEquals(tc, file->buffer->start + OSS_MEDIA_HLS_PACKET_SIZE,
                       file->buffer->pos);
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_pat_and_pmt_with_pat_failed(CuTest *tc) {
+void test_oss_media_hls_write_pat_and_pmt_with_pat_failed(CuTest *tc) {
     /*
-     * pat failed since oss_media_ts_fake_handler failed
+     * pat failed since oss_media_hls_fake_handler failed
      */ 
     int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
 
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 1;
-    ret = oss_media_ts_write_pat_and_pmt(file);
+    ret = oss_media_hls_write_pat_and_pmt(file);
     CuAssertIntEquals(tc, -1, ret);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_pat_and_pmt_with_pmt_failed(CuTest *tc) {
+void test_oss_media_hls_write_pat_and_pmt_with_pmt_failed(CuTest *tc) {
     /*
      * pat succeeded since buffer is not full
-     * pmt failed since oss_media_ts_fake_handler failed
+     * pmt failed since oss_media_hls_fake_handler failed
      */ 
     int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
 
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE + 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE + 1;
     file->frame_count = 1;
-    ret = oss_media_ts_write_pat_and_pmt(file);
+    ret = oss_media_hls_write_pat_and_pmt(file);
     CuAssertIntEquals(tc, -1, ret);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_pat_and_pmt_succeeded(CuTest *tc) {
+void test_oss_media_hls_write_pat_and_pmt_succeeded(CuTest *tc) {
     int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
 
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = -1;
-    ret = oss_media_ts_write_pat_and_pmt(file);
+    ret = oss_media_hls_write_pat_and_pmt(file);
     CuAssertIntEquals(tc, 0, ret);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_pat_and_pmt_with_encrypt(CuTest *tc) {
+void test_oss_media_hls_write_pat_and_pmt_with_encrypt(CuTest *tc) {
     CuAssertTrue(tc, 0);
 }
 
-void test_oss_media_ts_ossfile_handler_without_handle(CuTest *tc) {
+void test_oss_media_hls_ossfile_handler_without_handle(CuTest *tc) {
     int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
 
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
     file->buffer->pos = file->buffer->start;
-    ret = oss_media_ts_ossfile_handler(file);
+    ret = oss_media_hls_ossfile_handler(file);
     CuAssertIntEquals(tc, 0, ret);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_ossfile_handler_succeeded(CuTest *tc) {
+void test_oss_media_hls_ossfile_handler_succeeded(CuTest *tc) {
     int ret;
     int64_t length;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
     char *key = "test.txt";
     char *content = "hangzhou";
 
-    file = oss_media_ts_open(TEST_BUCKET_NAME, key, auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, key, auth_func);
     CuAssertTrue(tc, file != NULL);
     
     memcpy(&file->buffer->buf[file->buffer->pos], content, strlen(content));
@@ -424,12 +424,12 @@ void test_oss_media_ts_ossfile_handler_succeeded(CuTest *tc) {
 
     CuAssertTrue(tc, file->buffer->pos != file->buffer->start);
 
-    ret = oss_media_ts_ossfile_handler(file);
+    ret = oss_media_hls_ossfile_handler(file);
     CuAssertIntEquals(tc, 0, ret);
 
     CuAssertTrue(tc, file->buffer->pos == file->buffer->start);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 
     oss_media_file_t* read_file = oss_media_file_open(TEST_BUCKET_NAME, 
             key, "r", auth_func);
@@ -445,13 +445,12 @@ void test_oss_media_ts_ossfile_handler_succeeded(CuTest *tc) {
     oss_media_file_close(read_file);
 }
 
-void test_oss_media_ts_ossfile_handler_failed(CuTest *tc) {
+void test_oss_media_hls_ossfile_handler_failed(CuTest *tc) {
     int ret;
-    int64_t length;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
     char *content = "hangzhou";
 
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.txt", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "test2.txt", auth_func);
     CuAssertTrue(tc, file != NULL);
     
     memcpy(&file->buffer->buf[file->buffer->pos], content, sizeof(content));
@@ -460,283 +459,278 @@ void test_oss_media_ts_ossfile_handler_failed(CuTest *tc) {
     CuAssertTrue(tc, file->buffer->pos != file->buffer->start);
 
     file->file->_stat.length = 10;
-    ret = oss_media_ts_ossfile_handler(file);
+    ret = oss_media_hls_ossfile_handler(file);
     CuAssertIntEquals(tc, -1, ret);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_need_write_pat_and_pmt_is_true(CuTest *tc) {
+void test_oss_media_hls_need_write_pat_and_pmt_is_true(CuTest *tc) {
     int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
 
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.key", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "test2.key", auth_func);
     CuAssertTrue(tc, file != NULL);
     
     file->frame_count = 0;
-    ret = oss_media_ts_need_write_pat_and_pmt(file);
+    ret = oss_media_hls_need_write_pat_and_pmt(file);
     CuAssertIntEquals(tc, 1, ret);
     
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_need_write_pat_and_pmt_is_false(CuTest *tc) {
+void test_oss_media_hls_need_write_pat_and_pmt_is_false(CuTest *tc) {
     int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
 
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.key", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "test2.key", auth_func);
     CuAssertTrue(tc, file != NULL);
     
     file->frame_count = 1;
-    ret = oss_media_ts_need_write_pat_and_pmt(file);
+    ret = oss_media_hls_need_write_pat_and_pmt(file);
     CuAssertIntEquals(tc, 0, ret);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_ends_with_is_true(CuTest *tc) {
-    int ret = oss_media_ts_ends_with("1.ts", ".ts");
+void test_oss_media_hls_ends_with_is_true(CuTest *tc) {
+    int ret = oss_media_hls_ends_with("1.ts", ".ts");
     CuAssertIntEquals(tc, 1, ret);
 
-    ret = oss_media_ts_ends_with(".ts", ".ts");
+    ret = oss_media_hls_ends_with(".ts", ".ts");
     CuAssertIntEquals(tc, 1, ret);
 }
 
-void test_oss_media_ts_ends_with_is_false(CuTest *tc) {
-    int ret = oss_media_ts_ends_with("1.ts", "2.ts");
+void test_oss_media_hls_ends_with_is_false(CuTest *tc) {
+    int ret = oss_media_hls_ends_with("1.ts", "2.ts");
     CuAssertIntEquals(tc, 0, ret);
 
-    ret = oss_media_ts_ends_with("1.ts", ".t");
+    ret = oss_media_hls_ends_with("1.ts", ".t");
     CuAssertIntEquals(tc, 0, ret);
 
-    ret = oss_media_ts_ends_with("1.ts", "1.");
+    ret = oss_media_hls_ends_with("1.ts", "1.");
     CuAssertIntEquals(tc, 0, ret);
 }
 
-void test_oss_media_ts_open_with_ts_file(CuTest *tc) {
-    int ret;
-    oss_media_ts_file_t *file;
+void test_oss_media_hls_open_with_ts_file(CuTest *tc) {
+    oss_media_hls_file_t *file;
     
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.ts", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "test2.ts", auth_func);
     CuAssertTrue(tc, file != NULL);
     CuAssertIntEquals(tc, OSS_MEDIA_DEFAULT_WRITE_BUFFER,
                       file->buffer->end - file->buffer->start);
     CuAssertIntEquals(tc, 0, file->frame_count);
     CuAssertIntEquals(tc, OSS_MEDIA_DEFAULT_VIDEO_PID, file->options.video_pid);
     CuAssertIntEquals(tc, OSS_MEDIA_DEFAULT_AUDIO_PID, file->options.audio_pid);
-    CuAssertIntEquals(tc, OSS_MEDIA_TS_HLS_DELAY, file->options.hls_delay_ms);
+    CuAssertIntEquals(tc, OSS_MEDIA_HLS_HLS_DELAY, file->options.hls_delay_ms);
     CuAssertIntEquals(tc, 0, file->options.encrypt);
-    CuAssertPtrEquals(tc, oss_media_ts_ossfile_handler, file->options.handler_func);
+    CuAssertPtrEquals(tc, oss_media_hls_ossfile_handler, file->options.handler_func);
     CuAssertIntEquals(tc, OSS_MEDIA_PAT_INTERVAL_FRAME_COUNT,
                       file->options.pat_interval_frame_count);
     CuAssertIntEquals(tc, 0, file->buffer->start);
     CuAssertIntEquals(tc, 0, file->buffer->pos);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_open_with_m3u8_file(CuTest *tc) {
-    int ret;
-    oss_media_ts_file_t *file;
+void test_oss_media_hls_open_with_m3u8_file(CuTest *tc) {
+    oss_media_hls_file_t *file;
     
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.m3u8", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "test2.m3u8", auth_func);
     CuAssertTrue(tc, file != NULL);
     CuAssertIntEquals(tc, OSS_MEDIA_DEFAULT_WRITE_BUFFER / 32,
                       file->buffer->end - file->buffer->start);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_open_failed(CuTest *tc) {
-    int ret;
-    oss_media_ts_file_t *file;
+void test_oss_media_hls_open_failed(CuTest *tc) {
+    oss_media_hls_file_t *file;
     
-    file = oss_media_ts_open("not.bucket", "test2.m3u8", auth_func);
+    file = oss_media_hls_open("not.bucket", "test2.m3u8", auth_func);
     CuAssertTrue(tc, file == NULL);
 }
 
-void test_oss_media_ts_begin_m3u8(CuTest *tc) {
-    int ret;
-    oss_media_ts_file_t *file;
+void test_oss_media_hls_begin_m3u8(CuTest *tc) {
+    oss_media_hls_file_t *file;
     
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.m3u8", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "test2.m3u8", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    oss_media_ts_begin_m3u8(10, 2, file);
+    oss_media_hls_begin_m3u8(10, 2, file);
 
     char *expected = "#EXTM3U\n#EXT-X-TARGETDURATION:10\n"
                      "#EXT-X-MEDIA-SEQUENCE:2\n#EXT-X-VERSION:3\n";
-    char *result = &file->buffer->buf[file->buffer->start];
-    CuAssertStrnEquals(tc, expected, strlen(expected), result);
+    uint8_t *result = &file->buffer->buf[file->buffer->start];
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)result);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_end_m3u8(CuTest *tc) {
-    int ret;
-    oss_media_ts_file_t *file;
+void test_oss_media_hls_end_m3u8(CuTest *tc) {
+    oss_media_hls_file_t *file;
     
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "test2.m3u8", auth_func);
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "test2.m3u8", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    oss_media_ts_end_m3u8(file);
+    oss_media_hls_end_m3u8(file);
 
     char *expected = "#EXT-X-ENDLIST";
-    char *result = &file->buffer->buf[file->buffer->start];
-    CuAssertStrnEquals(tc, expected, strlen(expected), result);
+    uint8_t *result = &file->buffer->buf[file->buffer->start];
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)result);
 
-    oss_media_ts_flush(file);
+    oss_media_hls_flush(file);
     delete_file(file->file);
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_m3u8_failed(CuTest *tc) {
+void test_oss_media_hls_write_m3u8_failed(CuTest *tc) {
     int ret = 0;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 1;
 
-    oss_media_ts_m3u8_info_t m3u8[1];
+    oss_media_hls_m3u8_info_t m3u8[1];
     m3u8[0].duration = 0;
     memcpy(m3u8[0].url, "1.ts", strlen("1.ts"));
-    ret = oss_media_ts_write_m3u8(1, m3u8, file);
+    ret = oss_media_hls_write_m3u8(1, m3u8, file);
     CuAssertIntEquals(tc, -1, ret);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_m3u8_with_one_m3u8(CuTest *tc) {
+void test_oss_media_hls_write_m3u8_with_one_m3u8(CuTest *tc) {
     int ret = 0;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
     
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 0;
 
-    oss_media_ts_m3u8_info_t m3u8[1];
+    oss_media_hls_m3u8_info_t m3u8[1];
     m3u8[0].duration = 10;
     memcpy(m3u8[0].url, "1.ts", strlen("1.ts") + 1);
-    ret = oss_media_ts_write_m3u8(1, m3u8, file);
+    ret = oss_media_hls_write_m3u8(1, m3u8, file);
     CuAssertIntEquals(tc, 0, ret);
 
     char *expected = "#EXTINF:10.000,\n1.ts\n";
-    char *result = &file->buffer->buf[file->buffer->start];
-    CuAssertStrnEquals(tc, expected, strlen(expected), result);
+    uint8_t *result = &file->buffer->buf[file->buffer->start];
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)result);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_m3u8_with_two_m3u8(CuTest *tc) {
+void test_oss_media_hls_write_m3u8_with_two_m3u8(CuTest *tc) {
     int ret = 0;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
     
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 0;
 
-    oss_media_ts_m3u8_info_t m3u8[2];
+    oss_media_hls_m3u8_info_t m3u8[2];
     m3u8[0].duration = 10;
     memcpy(m3u8[0].url, "1.ts", strlen("1.ts") + 1);
     m3u8[1].duration = 8.4;
     memcpy(m3u8[1].url, "2.ts", strlen("2.ts") + 1);
-    ret = oss_media_ts_write_m3u8(2, m3u8, file);
+    ret = oss_media_hls_write_m3u8(2, m3u8, file);
     CuAssertIntEquals(tc, 0, ret);
     
     char *expected = "#EXTINF:10.000,\n1.ts\n#EXTINF:8.400,\n2.ts\n";
-    char *result = &file->buffer->buf[file->buffer->start];
-    CuAssertStrnEquals(tc, expected, strlen(expected), result);
+    uint8_t *result = &file->buffer->buf[file->buffer->start];
+    CuAssertStrnEquals(tc, expected, strlen(expected), (char*)result);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_close_failed(CuTest *tc) {
+void test_oss_media_hls_close_failed(CuTest *tc) {
     int ret = 0;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
     file->frame_count = 1;
     
-    ret = oss_media_ts_close(file);
+    ret = oss_media_hls_close(file);
     CuAssertIntEquals(tc, -1, ret);
 }
 
-void test_oss_media_ts_close_succeeded(CuTest *tc) {
+void test_oss_media_hls_close_succeeded(CuTest *tc) {
     int ret = 0;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key1.ts", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key1.ts", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
 
     file->frame_count = 0;
     
-    ret = oss_media_ts_close(file);
+    ret = oss_media_hls_close(file);
     CuAssertIntEquals(tc, 0, ret);
 }
 
-void test_oss_media_ts_write_frame_with_unsupport_stream_type(CuTest *tc) {
+void test_oss_media_hls_write_frame_with_unsupport_stream_type(CuTest *tc) {
     int ret = 0;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key2.ts", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key2.ts", auth_func);
     CuAssertTrue(tc, file != NULL);
 
-    oss_media_ts_frame_t frame;
+    oss_media_hls_frame_t frame;
     frame.stream_type = st_mp3;
     
-    ret = oss_media_ts_write_frame(&frame, file);
+    ret = oss_media_hls_write_frame(&frame, file);
     CuAssertIntEquals(tc, -1, ret);
 
-    oss_media_ts_flush(file);
+    oss_media_hls_flush(file);
     delete_file(file->file);
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_frame_with_handle_file_failed(CuTest *tc) {
+void test_oss_media_hls_write_frame_with_handle_file_failed(CuTest *tc) {
     int ret = 0;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key3.ts", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key3.ts", auth_func);
     CuAssertTrue(tc, file != NULL);
 
     uint8_t *buf = (uint8_t*)malloc(1024);
 
-    oss_media_ts_frame_t frame;
+    oss_media_hls_frame_t frame;
     frame.stream_type = st_aac;
     frame.pos = buf;
     frame.end = buf + 100;
-    file->options.handler_func = oss_media_ts_fake_handler;
+    file->options.handler_func = oss_media_hls_fake_handler;
     
-    file->buffer->end = file->buffer->pos + OSS_MEDIA_TS_PACKET_SIZE - 1;
+    file->buffer->end = file->buffer->pos + OSS_MEDIA_HLS_PACKET_SIZE - 1;
     file->frame_count = 1;
     
-    ret = oss_media_ts_write_frame(&frame, file);
+    ret = oss_media_hls_write_frame(&frame, file);
     CuAssertIntEquals(tc, -1, ret);
 
     free(buf);
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_frame_with_h264(CuTest *tc) {
+void test_oss_media_hls_write_frame_with_h264(CuTest *tc) {
     /*
      * check point: 1, h.264 data. 2,with pat and pmt. 3, with adaptation
      */
@@ -744,13 +738,13 @@ void test_oss_media_ts_write_frame_with_h264(CuTest *tc) {
     int i;
     int ret = 0;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key4.ts", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key4.ts", auth_func);
     CuAssertTrue(tc, file != NULL);
 
     uint8_t buf[] = {0x00, 0x00, 0x00, 0x01, 0x68, 0xee, 0x38, 0x30};
 
-    oss_media_ts_frame_t frame;
+    oss_media_hls_frame_t frame;
     frame.stream_type = st_h264;
     frame.pos = buf;
     frame.end = buf + sizeof(buf);
@@ -759,9 +753,9 @@ void test_oss_media_ts_write_frame_with_h264(CuTest *tc) {
     frame.continuity_counter = 7;
     frame.key = 1;
     
-    ret = oss_media_ts_write_frame(&frame, file);
+    ret = oss_media_hls_write_frame(&frame, file);
     CuAssertIntEquals(tc, 0, ret);
-    CuAssertIntEquals(tc, OSS_MEDIA_TS_PACKET_SIZE * 3,file->buffer->pos);
+    CuAssertIntEquals(tc, OSS_MEDIA_HLS_PACKET_SIZE * 3,file->buffer->pos);
     
     // check pat
     uint8_t expected[] = {0x47,0x40,0x00,0x10,0x00,0x00,0xb0,0x0d,
@@ -770,7 +764,7 @@ void test_oss_media_ts_write_frame_with_h264(CuTest *tc) {
     for (i = 0; i < sizeof(expected); i++) {
         CuAssertIntEquals(tc, expected[i], file->buffer->buf[i]);
     }
-    for (i = sizeof(expected); i < OSS_MEDIA_TS_PACKET_SIZE; i++) {
+    for (i = sizeof(expected); i < OSS_MEDIA_HLS_PACKET_SIZE; i++) {
         CuAssertIntEquals(tc, 0xff, file->buffer->buf[i]);
     }
 
@@ -782,13 +776,13 @@ void test_oss_media_ts_write_frame_with_h264(CuTest *tc) {
     for (i = 0; i < sizeof(expected_pmt); i++) 
     {
         CuAssertIntEquals(tc, expected_pmt[i],
-                          file->buffer->buf[OSS_MEDIA_TS_PACKET_SIZE + i]);
+                          file->buffer->buf[OSS_MEDIA_HLS_PACKET_SIZE + i]);
     }
     for (i = sizeof(expected_pmt); 
-         i < OSS_MEDIA_TS_PACKET_SIZE; i++) 
+         i < OSS_MEDIA_HLS_PACKET_SIZE; i++) 
     {
         CuAssertIntEquals(tc, 0xff, 
-                          file->buffer->buf[OSS_MEDIA_TS_PACKET_SIZE + i]);
+                          file->buffer->buf[OSS_MEDIA_HLS_PACKET_SIZE + i]);
     }
 
     // check frame content
@@ -802,43 +796,43 @@ void test_oss_media_ts_write_frame_with_h264(CuTest *tc) {
     for (i = 0; i < sizeof(expected_frame_begin); i++) 
     {
         CuAssertIntEquals(tc, expected_frame_begin[i], 
-                          file->buffer->buf[2 * OSS_MEDIA_TS_PACKET_SIZE + i]);
+                          file->buffer->buf[2 * OSS_MEDIA_HLS_PACKET_SIZE + i]);
     }
-    for (i = 2 * OSS_MEDIA_TS_PACKET_SIZE + sizeof(expected_frame_begin); 
-         i < 3 * OSS_MEDIA_TS_PACKET_SIZE - sizeof(expected_frame_end); i++) 
+    for (i = 2 * OSS_MEDIA_HLS_PACKET_SIZE + sizeof(expected_frame_begin); 
+         i < 3 * OSS_MEDIA_HLS_PACKET_SIZE - sizeof(expected_frame_end); i++) 
     {
         CuAssertIntEquals(tc, 0xff, file->buffer->buf[i]);
     }
     for (i = 0; i < sizeof(expected_frame_end); i++) 
     {
-        int32_t end_pos = 3 * OSS_MEDIA_TS_PACKET_SIZE - 
+        int32_t end_pos = 3 * OSS_MEDIA_HLS_PACKET_SIZE - 
                           sizeof(expected_frame_end) + i;
         CuAssertIntEquals(tc, expected_frame_end[i], file->buffer->buf[end_pos]);
     }
 
     CuAssertIntEquals(tc, 1, file->frame_count);
 
-    oss_media_ts_flush(file);
+    oss_media_hls_flush(file);
     delete_file(file->file);
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_frame_with_aac(CuTest *tc) {
+void test_oss_media_hls_write_frame_with_aac(CuTest *tc) {
     /*
      * check point: 1, aac data. 2,without pat and pmt. 3,without adaptation
      */
     int i;
     int ret = 0;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key5.ts", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key5.ts", auth_func);
     CuAssertTrue(tc, file != NULL);
 
     file->frame_count = 1; // disable and pat/pmt table
 
     uint8_t buf[] = {0xff, 0xf1, 0x6c, 0x80, 0x1f, 0xa1, 0xf0};
 
-    oss_media_ts_frame_t frame;
+    oss_media_hls_frame_t frame;
     frame.stream_type = st_aac;
     frame.pos = buf;
     frame.end = buf + sizeof(buf);
@@ -847,9 +841,9 @@ void test_oss_media_ts_write_frame_with_aac(CuTest *tc) {
     frame.continuity_counter = 7;
     frame.key = 0;
     
-    ret = oss_media_ts_write_frame(&frame, file);
+    ret = oss_media_hls_write_frame(&frame, file);
     CuAssertIntEquals(tc, 0, ret);
-    CuAssertIntEquals(tc, OSS_MEDIA_TS_PACKET_SIZE, file->buffer->pos); 
+    CuAssertIntEquals(tc, OSS_MEDIA_HLS_PACKET_SIZE, file->buffer->pos); 
    
     // check pat
     uint8_t expected_frame_begin[] = {0x47,0x41,0x01,0x37,0xa2,0x00};
@@ -862,31 +856,31 @@ void test_oss_media_ts_write_frame_with_aac(CuTest *tc) {
         CuAssertIntEquals(tc, expected_frame_begin[i], file->buffer->buf[ + i]);
     }
     for (i = sizeof(expected_frame_begin); 
-         i < OSS_MEDIA_TS_PACKET_SIZE - sizeof(expected_frame_end); i++) 
+         i < OSS_MEDIA_HLS_PACKET_SIZE - sizeof(expected_frame_end); i++) 
     {
         CuAssertIntEquals(tc, 0xff, file->buffer->buf[i]);
     }
     for (i = 0; i < sizeof(expected_frame_end); i++) 
     {
-        int32_t end_pos = OSS_MEDIA_TS_PACKET_SIZE - 
+        int32_t end_pos = OSS_MEDIA_HLS_PACKET_SIZE - 
                           sizeof(expected_frame_end) + i;
         CuAssertIntEquals(tc, expected_frame_end[i], file->buffer->buf[end_pos]);
     }
 
     CuAssertIntEquals(tc, 2, file->frame_count);
 
-    oss_media_ts_flush(file);
+    oss_media_hls_flush(file);
     delete_file(file->file);
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_frame_with_pes_overflow(CuTest *tc) {
+void test_oss_media_hls_write_frame_with_pes_overflow(CuTest *tc) {
     int i;
     int ret = 0;
     int data_len = 0xffff + 1;
 
-    oss_media_ts_file_t *file;
-    file = oss_media_ts_open(TEST_BUCKET_NAME, "key6.ts", auth_func);
+    oss_media_hls_file_t *file;
+    file = oss_media_hls_open(TEST_BUCKET_NAME, "key6.ts", auth_func);
     CuAssertTrue(tc, file != NULL);
 
     uint8_t buf[data_len];
@@ -894,7 +888,7 @@ void test_oss_media_ts_write_frame_with_pes_overflow(CuTest *tc) {
         buf[i] = i & 0xFF;
     }
 
-    oss_media_ts_frame_t frame;
+    oss_media_hls_frame_t frame;
     frame.stream_type = st_h264;
     frame.pos = buf;
     frame.end = buf + sizeof(buf);
@@ -903,9 +897,9 @@ void test_oss_media_ts_write_frame_with_pes_overflow(CuTest *tc) {
     frame.continuity_counter = 7;
     frame.key = 1;
     
-    ret = oss_media_ts_write_frame(&frame, file);
+    ret = oss_media_hls_write_frame(&frame, file);
     CuAssertIntEquals(tc, 0, ret);
-    CuAssertIntEquals(tc, OSS_MEDIA_TS_PACKET_SIZE * 359,file->buffer->pos);
+    CuAssertIntEquals(tc, OSS_MEDIA_HLS_PACKET_SIZE * 359,file->buffer->pos);
 
     // check frame first ts content
     uint8_t expected_frame[] = {0x47,0x41,0x00,0x37,0x07,0x50,0xff,0xff,0x8e,
@@ -933,22 +927,21 @@ void test_oss_media_ts_write_frame_with_pes_overflow(CuTest *tc) {
     for (i = 0; i < sizeof(expected_frame); i++) 
     {
         CuAssertIntEquals(tc, expected_frame[i], 
-                          file->buffer->buf[2 * OSS_MEDIA_TS_PACKET_SIZE + i]);
+                          file->buffer->buf[2 * OSS_MEDIA_HLS_PACKET_SIZE + i]);
     }
 
     CuAssertIntEquals(tc, 1, file->frame_count);
 
-    oss_media_ts_flush(file);
+    oss_media_hls_flush(file);
     delete_file(file->file);
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
-void test_oss_media_ts_write_frame_with_encrypt(CuTest *tc) {
+void test_oss_media_hls_write_frame_with_encrypt(CuTest *tc) {
     CuAssertTrue(tc, 0);
 }
 
-
-static int oss_media_ts_fake_handler(oss_media_ts_file_t *file) {
+static int oss_media_hls_fake_handler(oss_media_hls_file_t *file) {
     return file->frame_count++ > 0;
 }
 
@@ -963,55 +956,55 @@ static void auth_func(oss_media_file_t *file) {
     file->expiration = time(NULL) + 300;
 }
 
-CuSuite *test_ts()
+CuSuite *test_hls()
 {
     CuSuite* suite = CuSuiteNew();   
 
-    SUITE_ADD_TEST(suite, test_ts_setup);
+    SUITE_ADD_TEST(suite, test_hls_setup);
     
     SUITE_ADD_TEST(suite, test_calculate_crc32);
     SUITE_ADD_TEST(suite, test_calculate_crc32_with_empty);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_pcr);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_pts);
-    //SUITE_ADD_TEST(suite, test_oss_media_ts_encrypt_packet);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_hls_header);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_set_crc32);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_pcr);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_pts);
+    //SUITE_ADD_TEST(suite, test_oss_media_hls_encrypt_packet);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_hls_header);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_set_crc32);
     SUITE_ADD_TEST(suite, test_oss_media_handle_file_with_not_called);
     SUITE_ADD_TEST(suite, test_oss_media_handle_file_with_called_succeeded);
     SUITE_ADD_TEST(suite, test_oss_media_handle_file_with_called_failed);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_pat_with_failed);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_pat_with_succeeded);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_pmt_with_failed);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_pmt_with_succeeded);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_pat_and_pmt_with_pat_failed);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_pat_and_pmt_with_pmt_failed);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_pat_and_pmt_succeeded);
-    //SUITE_ADD_TEST(suite, test_oss_media_ts_write_pat_and_pmt_with_encrypt);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_ossfile_handler_without_handle);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_ossfile_handler_succeeded);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_ossfile_handler_failed);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_need_write_pat_and_pmt_is_true);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_need_write_pat_and_pmt_is_false);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_ends_with_is_true);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_ends_with_is_false);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_open_with_ts_file);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_open_with_m3u8_file);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_open_failed);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_begin_m3u8);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_end_m3u8);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_m3u8_failed);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_m3u8_with_one_m3u8);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_m3u8_with_two_m3u8);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_close_failed);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_close_succeeded);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_frame_with_unsupport_stream_type);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_frame_with_handle_file_failed);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_frame_with_h264);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_frame_with_aac);
-    SUITE_ADD_TEST(suite, test_oss_media_ts_write_frame_with_pes_overflow);
-    //SUITE_ADD_TEST(suite, test_oss_media_ts_write_frame_with_encrypt);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_pat_with_failed);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_pat_with_succeeded);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_pmt_with_failed);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_pmt_with_succeeded);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_pat_and_pmt_with_pat_failed);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_pat_and_pmt_with_pmt_failed);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_pat_and_pmt_succeeded);
+    //SUITE_ADD_TEST(suite, test_oss_media_hls_write_pat_and_pmt_with_encrypt);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_ossfile_handler_without_handle);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_ossfile_handler_succeeded);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_ossfile_handler_failed);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_need_write_pat_and_pmt_is_true);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_need_write_pat_and_pmt_is_false);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_ends_with_is_true);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_ends_with_is_false);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_open_with_ts_file);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_open_with_m3u8_file);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_open_failed);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_begin_m3u8);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_end_m3u8);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_m3u8_failed);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_m3u8_with_one_m3u8);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_m3u8_with_two_m3u8);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_close_failed);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_close_succeeded);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_frame_with_unsupport_stream_type);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_frame_with_handle_file_failed);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_frame_with_h264);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_frame_with_aac);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_write_frame_with_pes_overflow);
+    //SUITE_ADD_TEST(suite, test_oss_media_hls_write_frame_with_encrypt);
     
-    SUITE_ADD_TEST(suite, test_ts_teardown); 
+    SUITE_ADD_TEST(suite, test_hls_teardown);
     
     return suite;
 }

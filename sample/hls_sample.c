@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "src/oss_media_ts.h"
+#include "src/oss_media_hls.h"
 #include "src/oss_media_client.h"
 #include "config.h"
 #include "sample.h"
@@ -16,8 +16,8 @@ static void auth_func(oss_media_file_t *file) {
     file->expiration = time(NULL) + 300;
 }
 
-static void do_write(oss_media_ts_file_t *file) {
-    oss_media_ts_frame_t frame;
+static void do_write(oss_media_hls_file_t *file) {
+    oss_media_hls_frame_t frame;
     FILE    *file_h264;
     uint8_t *buf_h264;
     int     len_h264, i;
@@ -50,7 +50,7 @@ static void do_write(oss_media_ts_file_t *file) {
             frame.pos = buf_h264 + last_pos;
             frame.end = buf_h264 + cur_pos;
 
-            oss_media_ts_write_frame(&frame, file);
+            oss_media_hls_write_frame(&frame, file);
         }
 
         last_pos = cur_pos;
@@ -61,10 +61,9 @@ static void do_write(oss_media_ts_file_t *file) {
 }
 
 static void write_ts() {
-    int ret;
-    oss_media_ts_file_t *file;
+    oss_media_hls_file_t *file;
     
-    file = oss_media_ts_open(SAMPLE_BUCKET_NAME, "oss_media_ts.ts", 
+    file = oss_media_hls_open(SAMPLE_BUCKET_NAME, "oss_media_hls.ts", 
                              auth_func);
     if (file == NULL) {
         printf("open ts file failed.");
@@ -76,37 +75,36 @@ static void write_ts() {
     printf("convert H.264 to TS and write to oss file[%s] succeeded\n", 
            file->file->object_key);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 }
 
 static void write_m3u8() {
-    oss_media_ts_file_t *file;
-    int ret;
+    oss_media_hls_file_t *file;
 
-    file = oss_media_ts_open(SAMPLE_BUCKET_NAME, "oss_media_ts.m3u8", 
+    file = oss_media_hls_open(SAMPLE_BUCKET_NAME, "oss_media_hls.m3u8", 
                              auth_func);
     if (file == NULL) {
         printf("open m3u8 file failed.");
         return;
     }
 
-    oss_media_ts_m3u8_info_t m3u8[3];
+    oss_media_hls_m3u8_info_t m3u8[3];
     m3u8[0].duration = 9;
     memcpy(m3u8[0].url, "video-0.ts", strlen("video-0.ts"));
     m3u8[1].duration = 10;
     memcpy(m3u8[1].url, "video-1.ts", strlen("video-1.ts"));
     
-    oss_media_ts_begin_m3u8(10, 0, file);
-    oss_media_ts_write_m3u8(2, m3u8, file);
-    oss_media_ts_end_m3u8(file);
+    oss_media_hls_begin_m3u8(10, 0, file);
+    oss_media_hls_write_m3u8(2, m3u8, file);
+    oss_media_hls_end_m3u8(file);
 
-    oss_media_ts_close(file);
+    oss_media_hls_close(file);
 
     printf("write m3u8 to oss file succeeded\n");
 }
 
 static int usage() {
-    printf("Usage: oss_media_ts_example type\n"
+    printf("Usage: oss_media_hls_example type\n"
            "type:\n"
            "     ts\n"
            "     m3u8\n");
@@ -130,4 +128,6 @@ int main(int argc, char *argv[]) {
     }
 
     oss_media_destroy();
+
+    return 0;
 }

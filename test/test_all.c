@@ -1,12 +1,13 @@
 #include "CuTest.h"
 #include "oss_c_sdk/aos_log.h"
 #include "oss_c_sdk/aos_http_io.h"
+#include "src/oss_media_define.h"
 
 extern CuSuite *test_client();
 extern CuSuite *test_server();
 extern CuSuite *test_sts();
-extern CuSuite *test_ts();
-extern CuSuite *test_ts_stream();
+extern CuSuite *test_hls();
+extern CuSuite *test_hls_stream();
 
 static const struct testlist {
     const char *testname;
@@ -15,8 +16,8 @@ static const struct testlist {
     {"test_client", test_client},
     {"test_server", test_server},
     {"test_sts", test_sts},
-    {"test_ts", test_ts},
-    {"test_ts_stream", test_ts_stream},
+    {"test_hls", test_hls},
+    {"test_hls_stream", test_hls_stream},
     {"LastTest", NULL}
 };
 
@@ -94,15 +95,13 @@ int run_all_tests(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     int exit_code;
-    if (aos_http_io_initialize(0) != AOSE_OK) {
+    if (oss_media_init(AOS_LOG_OFF) != AOSE_OK) {
         exit(1);
     }
-    
-    aos_log_level = AOS_LOG_OFF;
+
     exit_code = run_all_tests(argc, argv);
 
-    //aos_http_io_deinitialize last
-    aos_http_io_deinitialize();
+    oss_media_destroy();
     
     return exit_code;
 }
