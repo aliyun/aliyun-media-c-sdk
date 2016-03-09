@@ -26,7 +26,7 @@
 - 不兼容0.x.x 系列SDK，client相关接口发生变化。
 
 ## 依赖
- - OSS C SDK
+ - [OSS C SDK](https://github.com/aliyun/aliyun-oss-c-sdk)
 
 ## 使用
  - 示例程序：[参考sample部分](sample/)
