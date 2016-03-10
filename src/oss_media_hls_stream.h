@@ -6,7 +6,7 @@
 /**
  * this struct describes the properties of hls stream options
  */
-typedef struct oss_media_hls_stream_option_s {
+typedef struct oss_media_hls_stream_options_s {
     int8_t is_live;
     char *bucket_name;
     char *ts_name_prefix;
@@ -15,13 +15,13 @@ typedef struct oss_media_hls_stream_option_s {
     int32_t audio_sample_rate;
     int32_t hls_time;
     int32_t hls_list_size;
-} oss_media_hls_stream_option_t;
+} oss_media_hls_stream_options_t;
 
 /**
  * this struct describes the properties of hls stream
  */
 typedef struct oss_media_hls_stream_s {
-    const oss_media_hls_stream_option_t *option;
+    const oss_media_hls_stream_options_t *options;
     oss_media_hls_file_t *ts_file;
     oss_media_hls_file_t *m3u8_file;
     oss_media_hls_frame_t *video_frame;
@@ -42,7 +42,7 @@ typedef struct oss_media_hls_stream_s {
  *      otherwise, a null pointer is returned
  */
 oss_media_hls_stream_t* oss_media_hls_stream_open(auth_fn_t auth_func,
-        const oss_media_hls_stream_option_t *options);
+        const oss_media_hls_stream_options_t *options);
 
 /**
  *  @brief  write h.264 and aac data

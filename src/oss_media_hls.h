@@ -66,7 +66,7 @@ typedef struct oss_media_hls_m3u8_info_s {
 /**
  *  this struct describes the hls options.
  */
-typedef struct oss_media_hls_option_s {
+typedef struct oss_media_hls_options_s {
     uint16_t video_pid;
     uint16_t audio_pid;
     uint32_t hls_delay_ms;
@@ -74,7 +74,7 @@ typedef struct oss_media_hls_option_s {
     char    key[OSS_MEDIA_HLS_ENCRYPT_KEY_SIZE];
     file_handler_fn_t handler_func;
     uint16_t pat_interval_frame_count;
-} oss_media_hls_option_t;
+} oss_media_hls_options_t;
 
 /**
  *  this struct describes the memory buffer.
@@ -92,7 +92,7 @@ typedef struct oss_media_hls_buf_s {
 typedef struct oss_media_hls_file_s {
     oss_media_file_t *file;
     oss_media_hls_buf_t *buffer;
-    oss_media_hls_option_t options;
+    oss_media_hls_options_t options;
     int64_t frame_count;
 } oss_media_hls_file_t;
 
