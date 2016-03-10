@@ -35,21 +35,21 @@ void test_oss_media_get_digit_num(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_open_with_vod(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 700;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 700;
     
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
     CuAssertIntEquals(tc, 1, stream->ts_file_index);
     CuAssertIntEquals(tc, 0, stream->current_file_begin_pts + 1);
-    CuAssertTrue(tc, NULL != stream->option);
+    CuAssertTrue(tc, NULL != stream->options);
     CuAssertStrEquals(tc, "test0.ts", stream->ts_file->file->object_key);
     CuAssertStrEquals(tc, "test.m3u8", stream->m3u8_file->file->object_key);
     CuAssertStrEquals(tc, "a", stream->m3u8_file->file->mode);
@@ -73,22 +73,22 @@ void test_oss_media_hls_stream_open_with_vod(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_open_with_live(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test.m3u8";
-    option.is_live = 1;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 700;
-    option.hls_list_size = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test.m3u8";
+    options.is_live = 1;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 700;
+    options.hls_list_size = 5;
     
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
     CuAssertIntEquals(tc, 1, stream->ts_file_index);
     CuAssertIntEquals(tc, 0, stream->current_file_begin_pts + 1);
-    CuAssertTrue(tc, NULL != stream->option);
+    CuAssertTrue(tc, NULL != stream->options);
     CuAssertStrEquals(tc, "test0.ts", stream->ts_file->file->object_key);
     CuAssertStrEquals(tc, "test.m3u8", stream->m3u8_file->file->object_key);
     CuAssertStrEquals(tc, "w", stream->m3u8_file->file->mode);
@@ -113,18 +113,18 @@ void test_oss_media_hls_stream_open_with_live(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_open_with_failed(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test";
-    option.bucket_name = "not.exist";
-    option.m3u8_name = "test.m3u8";
-    option.is_live = 1;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 700;
-    option.hls_list_size = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test";
+    options.bucket_name = "not.exist";
+    options.m3u8_name = "test.m3u8";
+    options.is_live = 1;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 700;
+    options.hls_list_size = 5;
     
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream == NULL);
 }
 
@@ -167,19 +167,19 @@ void test_oss_media_create_ts_full_url_with_prefix(CuTest *tc) {
 }
 
 void test_oss_media_set_m3u8_info(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "dir/test";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "dir/test.m3u8";
-    option.is_live = 1;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 700;
-    option.hls_list_size = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "dir/test";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "dir/test.m3u8";
+    options.is_live = 1;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 700;
+    options.hls_list_size = 5;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->file->endpoint = "oss.abc.com";
@@ -198,18 +198,18 @@ void test_oss_media_set_m3u8_info(CuTest *tc) {
 }
 
 void test_oss_media_write_m3u8_for_vod(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "dir/test2-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "dir/test2.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 10;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "dir/test2-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "dir/test2.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 10;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->file->endpoint = "oss.abc.com";
@@ -236,19 +236,19 @@ void test_oss_media_write_m3u8_for_vod(CuTest *tc) {
 }
 
 void test_oss_media_write_m3u8_for_live(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "dir/test2-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "dir/test2.m3u8";
-    option.is_live = 1;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 10;
-    option.hls_list_size = 3;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "dir/test2-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "dir/test2.m3u8";
+    options.is_live = 1;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 10;
+    options.hls_list_size = 3;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->file->endpoint = "oss.abc.com";
@@ -302,18 +302,18 @@ void test_oss_media_write_m3u8_for_live(CuTest *tc) {
 }
 
 void test_oss_media_write_m3u8_failed(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "dir/test2-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "dir/test2.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 10;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "dir/test2-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "dir/test2.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 10;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->m3u8_file->options.handler_func = oss_media_hls_fake_handler;
@@ -329,18 +329,18 @@ void test_oss_media_write_m3u8_failed(CuTest *tc) {
 }
 
 void test_close_and_open_new_file_with_close_failed(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "dir/test3-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "dir/test3.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 10;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "dir/test3-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "dir/test3.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 10;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_hls_fake_handler;
@@ -359,18 +359,18 @@ void test_close_and_open_new_file_with_open_failed(CuTest *tc) {
     char *bucket = (char*)malloc(strlen(TEST_BUCKET_NAME) + 1);
     memcpy(bucket, TEST_BUCKET_NAME, strlen(TEST_BUCKET_NAME) + 1);
 
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "dir/test4-";
-    option.bucket_name = bucket;
-    option.m3u8_name = "dir/test4.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 10;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "dir/test4-";
+    options.bucket_name = bucket;
+    options.m3u8_name = "dir/test4.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 10;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_hls_fake_handler;
@@ -385,18 +385,18 @@ void test_close_and_open_new_file_with_open_failed(CuTest *tc) {
 }
 
 void test_close_and_open_new_file(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "dir/test5-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "dir/test5.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 10;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "dir/test5-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "dir/test5.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 10;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
     CuAssertStrEquals(tc, "dir/test5-0.ts", stream->ts_file->file->object_key);
 
@@ -411,18 +411,18 @@ void test_close_and_open_new_file(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_flush_with_write_ts_failed(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test6-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test6.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 10;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test6-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test6.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 10;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_hls_fake_handler;
@@ -439,18 +439,18 @@ void test_oss_media_hls_stream_flush_with_write_ts_failed(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_flush_with_write_m3u8_failed(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test6-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test7.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 10;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test6-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test7.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 10;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_hls_fake_handler;
@@ -468,18 +468,18 @@ void test_oss_media_hls_stream_flush_with_write_m3u8_failed(CuTest *tc) {
 void test_oss_media_hls_stream_flush(CuTest *tc) {
     char *ts_content = "abc";
 
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test36-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test36.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 10;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test36-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test36.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 10;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
     
     memcpy(&stream->ts_file->buffer->buf[stream->ts_file->buffer->pos],
@@ -511,7 +511,7 @@ void test_oss_media_hls_stream_flush(CuTest *tc) {
 
     // read m3u8 file content
     oss_media_file_t* m3u8_file = oss_media_file_open(TEST_BUCKET_NAME, 
-            option.m3u8_name, "r", auth_func);
+            options.m3u8_name, "r", auth_func);
     CuAssertTrue(tc, m3u8_file != NULL);
     free(buffer);
 
@@ -579,18 +579,18 @@ void test_oss_media_get_samples_per_frame_with_aac(CuTest *tc) {
 }
 
 void test_oss_media_write_stream_frame_with_write_frame_failed(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test7-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test7.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 10;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test7-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test7.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 10;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_hls_fake_handler;
@@ -611,18 +611,18 @@ void test_oss_media_write_stream_frame_with_write_frame_failed(CuTest *tc) {
 }
 
 void test_oss_media_write_stream_frame_with_flush_ts_failed(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test8-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test8.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test8-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test8.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_hls_fake_handler;
@@ -645,18 +645,18 @@ void test_oss_media_write_stream_frame_with_flush_ts_failed(CuTest *tc) {
 }
 
 void test_oss_media_write_stream_frame_with_new_file_failed(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test9-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test9.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test9-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test9.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_hls_fake_handler;
@@ -677,18 +677,18 @@ void test_oss_media_write_stream_frame_with_new_file_failed(CuTest *tc) {
 }
 
 void test_oss_media_write_stream_frame_succeeded(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test10-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test10.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test10-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test10.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->ts_file->options.handler_func = oss_media_hls_fake_handler;
@@ -722,18 +722,18 @@ void test_oss_media_get_video_frame_with_no_data(CuTest *tc) {
 }
 
 void test_oss_media_get_video_frame_with_no_consume(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test11-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test11.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test11-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test11.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->video_frame->end = stream->video_frame->pos + 10;
@@ -750,18 +750,18 @@ void test_oss_media_get_video_frame_with_no_consume(CuTest *tc) {
 }
 
 void test_oss_media_get_video_frame_with_get_first_frame(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test12-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test12.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test12-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test12.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
     
     uint8_t buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10,
@@ -774,7 +774,7 @@ void test_oss_media_get_video_frame_with_get_first_frame(CuTest *tc) {
     CuAssertIntEquals(tc, 1, ret);
     CuAssertPtrEquals(tc, buf, stream->video_frame->pos);
     CuAssertPtrEquals(tc, buf + 6, stream->video_frame->end);
-    CuAssertIntEquals(tc, 5000 + 90 * option.video_frame_rate,
+    CuAssertIntEquals(tc, 5000 + 90 * options.video_frame_rate,
                       stream->video_frame->pts);
     CuAssertIntEquals(tc, stream->video_frame->dts, stream->video_frame->pts);
 
@@ -785,18 +785,18 @@ void test_oss_media_get_video_frame_with_get_first_frame(CuTest *tc) {
 }
 
 void test_oss_media_get_video_frame_with_get_last_frame(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test33-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test33.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test33-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test33.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
     
     uint8_t buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10};
@@ -808,7 +808,7 @@ void test_oss_media_get_video_frame_with_get_last_frame(CuTest *tc) {
     CuAssertIntEquals(tc, 1, ret);
     CuAssertPtrEquals(tc, buf, stream->video_frame->pos);
     CuAssertPtrEquals(tc, buf + 6, stream->video_frame->end);
-    CuAssertIntEquals(tc, 5000 + 90 * option.video_frame_rate,
+    CuAssertIntEquals(tc, 5000 + 90 * options.video_frame_rate,
                       stream->video_frame->pts);
     CuAssertIntEquals(tc, stream->video_frame->dts, stream->video_frame->pts);
 
@@ -827,18 +827,18 @@ void test_oss_media_get_audio_frame_with_no_data(CuTest *tc) {
 }
 
 void test_oss_media_get_audio_frame_with_no_consume(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test14-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test14.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test14-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test14.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->audio_frame->end = stream->audio_frame->pos + 10;
@@ -854,18 +854,18 @@ void test_oss_media_get_audio_frame_with_no_consume(CuTest *tc) {
 }
 
 void test_oss_media_get_audio_frame_with_get_first_frame(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test15-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test15.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test15-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test15.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
     
     uint8_t buf[] = {0xFF, 0xF0, 0x00, 0x01, 0x09, 0x10, 
@@ -879,7 +879,7 @@ void test_oss_media_get_audio_frame_with_get_first_frame(CuTest *tc) {
     CuAssertPtrEquals(tc, buf, stream->audio_frame->pos);
     CuAssertPtrEquals(tc, buf + 6, stream->audio_frame->end);
     CuAssertIntEquals(tc, 5000 + (90000 * OSS_MEDIA_AAC_SAMPLE_RATE) / 
-                      stream->option->audio_sample_rate,
+                      stream->options->audio_sample_rate,
                       stream->audio_frame->pts);
     CuAssertIntEquals(tc, stream->audio_frame->dts, stream->audio_frame->pts);
 
@@ -890,18 +890,18 @@ void test_oss_media_get_audio_frame_with_get_first_frame(CuTest *tc) {
 }
 
 void test_oss_media_get_audio_frame_with_get_last_frame(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test23-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test23.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test23-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test23.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
     
     uint8_t buf[] = {0xFF, 0xF0, 0x00, 0x01, 0x09, 0x10};
@@ -914,7 +914,7 @@ void test_oss_media_get_audio_frame_with_get_last_frame(CuTest *tc) {
     CuAssertPtrEquals(tc, buf, stream->audio_frame->pos);
     CuAssertPtrEquals(tc, buf + 6, stream->audio_frame->end);
     CuAssertIntEquals(tc, 5000 + (90000 * OSS_MEDIA_AAC_SAMPLE_RATE) / 
-                      stream->option->audio_sample_rate,
+                      stream->options->audio_sample_rate,
                       stream->audio_frame->pts);
     CuAssertIntEquals(tc, stream->audio_frame->dts, stream->audio_frame->pts);
     
@@ -964,21 +964,21 @@ void test_oss_media_sync_pts_dts_with_sync_audio(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_write_with_no_video_audio(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test24-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test24.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test24-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test24.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
 
     uint8_t *video_buf;
     uint8_t *audio_buf;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);    
 
     ret = oss_media_hls_stream_write(video_buf, 0, audio_buf, 0, stream);
@@ -991,21 +991,21 @@ void test_oss_media_hls_stream_write_with_no_video_audio(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_write_with_only_video(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test43-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test43.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test43-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test43.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
 
     uint8_t video_buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 0xfa};
     uint8_t *audio_buf;
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_hls_stream_write(video_buf, sizeof(video_buf),
@@ -1020,14 +1020,14 @@ void test_oss_media_hls_stream_write_with_only_video(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_write_with_only_audio(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test16-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test16.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test16-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test16.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
 
     uint8_t *video_buf;
     uint8_t audio_buf[] = {0xFF, 0xF0, 0x00, 0x91, 0x9d, 0xad,
@@ -1035,7 +1035,7 @@ void test_oss_media_hls_stream_write_with_only_audio(CuTest *tc) {
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_hls_stream_write(video_buf, 0,
@@ -1049,14 +1049,14 @@ void test_oss_media_hls_stream_write_with_only_audio(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_write(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test53-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test53.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test53-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test53.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
 
     uint8_t video_buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 0xfa,
                            0x00, 0x00, 0x00, 0x01, 0x81, 0x1f, 0xff,
@@ -1068,7 +1068,7 @@ void test_oss_media_hls_stream_write(CuTest *tc) {
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_hls_stream_write(video_buf, sizeof(video_buf),
@@ -1083,14 +1083,14 @@ void test_oss_media_hls_stream_write(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_write_with_same_pts(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test63-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test63.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 2;
-    option.audio_sample_rate = 1024 * 1000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test63-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test63.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 2;
+    options.audio_sample_rate = 1024 * 1000;
+    options.hls_time = 5;
 
     uint8_t video_buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 0xfa,
                            0x00, 0x00, 0x00, 0x01, 0x81, 0x1f, 0xff,
@@ -1102,7 +1102,7 @@ void test_oss_media_hls_stream_write_with_same_pts(CuTest *tc) {
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_hls_stream_write(video_buf, sizeof(video_buf),
@@ -1117,14 +1117,14 @@ void test_oss_media_hls_stream_write_with_same_pts(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_write_failed(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test16-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test16.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test16-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test16.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
 
     uint8_t video_buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 0xfa,
                            0x00, 0x00, 0x00, 0x01, 0x81, 0x1f, 0xff,
@@ -1133,7 +1133,7 @@ void test_oss_media_hls_stream_write_failed(CuTest *tc) {
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     stream->video_frame->pts = 900000;
@@ -1151,14 +1151,14 @@ void test_oss_media_hls_stream_write_failed(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_close_for_vod(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test20-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test20.m3u8";
-    option.is_live = 0;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test20-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test20.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
 
     uint8_t video_buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 0xfa,
                            0x00, 0x00, 0x00, 0x01, 0x81, 0x1f, 0xff,
@@ -1169,7 +1169,7 @@ void test_oss_media_hls_stream_close_for_vod(CuTest *tc) {
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_hls_stream_write(video_buf, sizeof(video_buf),
@@ -1189,7 +1189,7 @@ void test_oss_media_hls_stream_close_for_vod(CuTest *tc) {
 
     // read m3u8 file content
     oss_media_file_t* m3u8_file = oss_media_file_open(TEST_BUCKET_NAME, 
-            option.m3u8_name, "r", auth_func);
+            options.m3u8_name, "r", auth_func);
     CuAssertTrue(tc, m3u8_file != NULL);
     free(buffer);
 
@@ -1217,7 +1217,7 @@ void test_oss_media_hls_stream_close_for_vod(CuTest *tc) {
 
     // read m3u8 file content
     m3u8_file = oss_media_file_open(TEST_BUCKET_NAME, 
-                                    option.m3u8_name, "r", auth_func);
+                                    options.m3u8_name, "r", auth_func);
     CuAssertTrue(tc, m3u8_file != NULL);
     free(buffer);
 
@@ -1232,15 +1232,15 @@ void test_oss_media_hls_stream_close_for_vod(CuTest *tc) {
 }
 
 void test_oss_media_hls_stream_close_for_live(CuTest *tc) {
-    oss_media_hls_stream_option_t option;
-    option.ts_name_prefix = "test21-";
-    option.bucket_name = TEST_BUCKET_NAME;
-    option.m3u8_name = "test21.m3u8";
-    option.is_live = 1;
-    option.video_frame_rate = 33;
-    option.audio_sample_rate = 24000;
-    option.hls_time = 5;
-    option.hls_list_size = 3;
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test21-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test21.m3u8";
+    options.is_live = 1;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
+    options.hls_list_size = 3;
 
     uint8_t video_buf[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10, 0xfa,
                            0x00, 0x00, 0x00, 0x01, 0x81, 0x1f, 0xff,
@@ -1251,7 +1251,7 @@ void test_oss_media_hls_stream_close_for_live(CuTest *tc) {
     
     int ret;
     oss_media_hls_stream_t *stream;
-    stream = oss_media_hls_stream_open(auth_func, &option);
+    stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_hls_stream_write(video_buf, sizeof(video_buf),
@@ -1275,7 +1275,7 @@ void test_oss_media_hls_stream_close_for_live(CuTest *tc) {
 
     // read m3u8 file content
     oss_media_file_t* m3u8_file = oss_media_file_open(TEST_BUCKET_NAME, 
-            option.m3u8_name, "r", auth_func);
+            options.m3u8_name, "r", auth_func);
     CuAssertTrue(tc, m3u8_file != NULL);
     free(buffer);
 

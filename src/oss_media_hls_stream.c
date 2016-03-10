@@ -12,7 +12,7 @@ static int16_t oss_media_get_digit_num(int32_t value)
 
 
 static char *oss_media_create_new_ts_file_name(
-        const oss_media_hls_stream_option_t *option,
+        const oss_media_hls_stream_options_t *options,
         oss_media_hls_stream_t *stream)
 {
         
@@ -21,8 +21,8 @@ static char *oss_media_create_new_ts_file_name(
     sprintf(pos_str, "%d", stream->ts_file_index++);
     
     return apr_psprintf(stream->pool, "%.*s%.*s%.*s",
-                        (int)strlen(option->ts_name_prefix), 
-                        option->ts_name_prefix,
+                        (int)strlen(options->ts_name_prefix), 
+                        options->ts_name_prefix,
                         (int)strlen(pos_str), pos_str,
                         (int)strlen(OSS_MEDIA_TS_FILE_SURFIX), 
                         OSS_MEDIA_TS_FILE_SURFIX);
@@ -30,19 +30,19 @@ static char *oss_media_create_new_ts_file_name(
 
 
 oss_media_hls_stream_t* oss_media_hls_stream_open(auth_fn_t auth_func,
-        const oss_media_hls_stream_option_t *option)
+        const oss_media_hls_stream_options_t *options)
 {
     oss_media_hls_stream_t *stream;
     stream = (oss_media_hls_stream_t*)malloc(sizeof(oss_media_hls_stream_t));
-    stream->option = option;
+    stream->options = options;
     stream->ts_file_index = 0;
     stream->current_file_begin_pts = -1;
     stream->has_aud = 0;
 
     aos_pool_create(&stream->pool, NULL);
 
-    char *ts_file_name = oss_media_create_new_ts_file_name(option, stream);
-    stream->ts_file = oss_media_hls_open(option->bucket_name, 
+    char *ts_file_name = oss_media_create_new_ts_file_name(options, stream);
+    stream->ts_file = oss_media_hls_open(options->bucket_name, 
             ts_file_name, auth_func);
     if (stream->ts_file == NULL) {
         aos_error_log("open ts file[%s] failed.", ts_file_name);
@@ -50,19 +50,19 @@ oss_media_hls_stream_t* oss_media_hls_stream_open(auth_fn_t auth_func,
         return NULL;
     }
 
-    stream->m3u8_file = oss_media_hls_open(option->bucket_name, 
-            option->m3u8_name, auth_func);
+    stream->m3u8_file = oss_media_hls_open(options->bucket_name, 
+            options->m3u8_name, auth_func);
     if (stream->m3u8_file == NULL) {
-        aos_error_log("open m3u8 file[%s] failed.", option->m3u8_name);
+        aos_error_log("open m3u8 file[%s] failed.", options->m3u8_name);
         free(stream);
         return NULL;
     }
 
     // update m3u8 file mode to 'w' for live scene
-    if (option->is_live) {
+    if (options->is_live) {
         stream->m3u8_file->file->mode = "w";
         stream->m3u8_infos = (oss_media_hls_m3u8_info_t*)malloc(
-                sizeof(oss_media_hls_m3u8_info_t) * option->hls_list_size);
+                sizeof(oss_media_hls_m3u8_info_t) * options->hls_list_size);
     } else {
         stream->m3u8_infos = (oss_media_hls_m3u8_info_t*)malloc(
                 sizeof(oss_media_hls_m3u8_info_t));
@@ -143,12 +143,12 @@ static int oss_media_write_m3u8(float duration,
     int32_t pos;
     int32_t cur_m3u8_count;
     
-    if (stream->option->is_live) {
-        int32_t hls_list_size = stream->option->hls_list_size;
+    if (stream->options->is_live) {
+        int32_t hls_list_size = stream->options->hls_list_size;
         cur_m3u8_count = hls_list_size > stream->ts_file_index ? 
                          stream->ts_file_index : hls_list_size;
         
-        oss_media_hls_begin_m3u8(stream->option->hls_time,
+        oss_media_hls_begin_m3u8(stream->options->hls_time,
                                 stream->ts_file_index - cur_m3u8_count,
                                 stream->m3u8_file);
         
@@ -161,7 +161,7 @@ static int oss_media_write_m3u8(float duration,
         }
     } else {
         if (stream->m3u8_file->file->_stat.length == 0) {
-            oss_media_hls_begin_m3u8(stream->option->hls_time, 0,
+            oss_media_hls_begin_m3u8(stream->options->hls_time, 0,
                     stream->m3u8_file);
         }
 
@@ -190,8 +190,8 @@ static int close_and_open_new_file(oss_media_hls_stream_t *stream) {
     }
 
     // open next ts file
-    char *ts_file_name = oss_media_create_new_ts_file_name(stream->option, stream);
-    stream->ts_file = oss_media_hls_open(stream->option->bucket_name, 
+    char *ts_file_name = oss_media_create_new_ts_file_name(stream->options, stream);
+    stream->ts_file = oss_media_hls_open(stream->options->bucket_name, 
             ts_file_name, auth_func);
     if (stream->ts_file == NULL) {
         aos_error_log("open ts file[%s] failed.", ts_file_name);
@@ -252,10 +252,10 @@ static int64_t oss_media_get_inc_pts(oss_media_hls_frame_t *frame,
 {
     int64_t samples_per_frame;
     if (frame->stream_type == st_h264) {
-        return 90 * stream->option->video_frame_rate;
+        return 90 * stream->options->video_frame_rate;
     } else {
         samples_per_frame = oss_media_get_samples_per_frame(stream);
-        return (90000 * samples_per_frame) / stream->option->audio_sample_rate;
+        return (90000 * samples_per_frame) / stream->options->audio_sample_rate;
     } 
 }
 
@@ -307,7 +307,7 @@ static int oss_media_write_stream_frame(oss_media_hls_frame_t *frame,
     }
 
     float duration = (frame->pts - stream->current_file_begin_pts) / 90000.0;
-    if (oss_media_need_flush(duration, stream->option->hls_time, frame))
+    if (oss_media_need_flush(duration, stream->options->hls_time, frame))
     {
         if(0 != oss_media_hls_stream_flush(duration, stream)) {
             aos_error_log("flush stream data failed.");
@@ -513,7 +513,7 @@ int oss_media_hls_stream_close(oss_media_hls_stream_t *stream) {
     }
 
     // write end flag to m3u8 file and close for vod ts
-    if (!stream->option->is_live) {
+    if (!stream->options->is_live) {
         oss_media_hls_end_m3u8(stream->m3u8_file);
     }
 
