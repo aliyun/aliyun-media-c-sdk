@@ -1,6 +1,7 @@
 # Aliyun OSS Media C SDK 
 
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
+[![GitHub version](https://badge.fury.io/gh/aliyun%2Faliyun-media-c-sdk.svg)](https://badge.fury.io/gh/aliyun%2Faliyun-media-c-sdk)
 
 ## 关于
 不少情况下，我们都需要将摄像头拍摄的视频快速存储到云端（OSS），但是我们也有一些因素要考虑：
