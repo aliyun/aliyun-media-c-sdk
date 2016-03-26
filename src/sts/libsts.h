@@ -98,7 +98,7 @@ typedef struct AssumeRoleRequestContext
     
 typedef struct STSData
 {
-    char tmpAccessKeyId[32];
+    char tmpAccessKeyId[64];
     char tmpAccessKeySecret[64];
     char securityToken[2048];
 } STSData;

@@ -54,6 +54,7 @@ oss_media_hls_stream_t* oss_media_hls_stream_open(auth_fn_t auth_func,
             options->m3u8_name, auth_func);
     if (stream->m3u8_file == NULL) {
         aos_error_log("open m3u8 file[%s] failed.", options->m3u8_name);
+        oss_media_hls_close(stream->ts_file);
         free(stream);
         return NULL;
     }

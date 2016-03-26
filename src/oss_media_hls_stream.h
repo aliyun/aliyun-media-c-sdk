@@ -27,7 +27,7 @@ typedef struct oss_media_hls_stream_s {
     oss_media_hls_frame_t *video_frame;
     oss_media_hls_frame_t *audio_frame;
     oss_media_hls_m3u8_info_t *m3u8_infos;
-    int32_t ts_file_index;
+    int64_t ts_file_index;
     int64_t current_file_begin_pts;
     int32_t has_aud;
     aos_pool_t *pool;
