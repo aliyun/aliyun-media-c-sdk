@@ -260,7 +260,7 @@ static STSStatus compose_post_data(char* buffer, uint32_t bufferSize,
 static STSStatus parse_sts_result(int bufferSize, const char* buffer, STSData* result)
 {
     STSData* stsData = (STSData*)result;
-    jsmntok_t json[256];
+    jsmntok_t json[1024];
     jsmn_parser parser;
     jsmnerr_t r;
     int i = 0;
@@ -270,7 +270,7 @@ static STSStatus parse_sts_result(int bufferSize, const char* buffer, STSData* r
     const char* pValue;
     
     jsmn_init(&parser);
-    r = jsmn_parse(&parser, buffer, bufferSize, json, 256);
+    r = jsmn_parse(&parser, buffer, bufferSize, json, 1024);
     
     if (r >= 0) {
         for (i = 0; i < r; ++i) {
