@@ -66,7 +66,7 @@ static void write_file() {
     // write file
     write_size = oss_media_file_write(file, g_val, strlen(g_val));
     if (-1 != write_size) {
-        printf("write %" PRId64 " bytes succeeded\n", write_size);
+        printf("write %" APR_INT64_T_FMT " bytes succeeded\n", write_size);
     } else {
         oss_media_file_close(file);
         printf("write failed\n");
@@ -75,7 +75,7 @@ static void write_file() {
 
     write_size = oss_media_file_write(file, g_val, strlen(g_val));
     if (-1 != write_size) {
-        printf("write %" PRId64 " bytes succeeded\n", write_size);
+        printf("write %" APR_INT64_T_FMT " bytes succeeded\n", write_size);
     } else {
         oss_media_file_close(file);
         printf("write failed\n");
@@ -108,7 +108,7 @@ static void append_file() {
     for (i = 0; i < 8; i++) {
         write_size = oss_media_file_write(file, g_val, strlen(g_val));
         if (-1 != write_size) {
-            printf("write %" PRId64 " bytes succeeded\n", write_size);
+            printf("write %" APR_INT64_T_FMT " bytes succeeded\n", write_size);
         } else {
             oss_media_file_close(file);
             printf("write failed\n");
@@ -143,7 +143,7 @@ static void read_file() {
         return;
     }
 
-    aos_info_log("file [name=%s, length=%" PRId64 ", type=%s]", 
+    aos_info_log("file [name=%s, length=%" APR_INT64_T_FMT ", type=%s]", 
                  file->object_key, stat.length, stat.type);
 
     // read file
@@ -185,17 +185,17 @@ static void seek_file() {
         return;
     }
 
-    aos_info_log("file [name=%s, length=%" PRId64 ", type=%s]", 
+    aos_info_log("file [name=%s, length=%" APR_INT64_T_FMT ", type=%s]", 
                  file->object_key, stat.length, stat.type);
 
     // tell
-    aos_info_log("file [position=%" PRId64 "]", oss_media_file_tell(file));
+    aos_info_log("file [position=%" APR_INT64_T_FMT "]", oss_media_file_tell(file));
 
     // seek
     oss_media_file_seek(file, stat.length / 2);
 
     // tell
-    aos_info_log("file [position=%" PRId64 "] after seek %" PRId64, 
+    aos_info_log("file [position=%" APR_INT64_T_FMT "] after seek %" APR_INT64_T_FMT, 
                  oss_media_file_tell(file), stat.length / 2);
 
     // read
@@ -232,7 +232,7 @@ static void error_code() {
     // write file
     write_size = oss_media_file_write(file, g_val, strlen(g_val));
     if (-1 != write_size) {
-        printf("write %" PRId64 " bytes succeeded\n", write_size);
+        printf("write %" APR_INT64_T_FMT " bytes succeeded\n", write_size);
     } else {
         printf("write [%s] failed\n", file->object_key);
     } 
@@ -296,7 +296,7 @@ static void perf(int loop) {
 
         duration = end.tv_sec * 1000 + end.tv_usec / 1000 - 
                    start.tv_sec * 1000 - start.tv_usec / 1000;
-        printf("perf: [duration=%" PRId64 ", len=%" PRId64 "]\n", 
+        printf("perf: [duration=%" APR_INT64_T_FMT ", len=%" APR_INT64_T_FMT "]\n", 
                duration, file->_stat.length);
     }
 
