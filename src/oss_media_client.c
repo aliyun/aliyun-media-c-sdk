@@ -166,7 +166,7 @@ int64_t oss_media_file_seek(oss_media_file_t *file, int64_t offset) {
         return -1;
     }
     if (offset < 0 || offset >= file->_stat.length) {
-        aos_error_log("offset[%" PRId64 "] is invalidate, file pos[%" PRId64 "]\n", 
+        aos_error_log("offset[%" APR_INT64_T_FMT "] is invalidate, file pos[%" APR_INT64_T_FMT "]\n", 
                       offset, file->_stat.length);
         return -1;
     }
@@ -210,7 +210,7 @@ int64_t oss_media_file_read(oss_media_file_t *file, void *buf, int64_t nbyte) {
 
     end = (file->_stat.length > 0 && file->_stat.pos + nbyte > file->_stat.length) ? 
           file->_stat.length - 1 : file->_stat.pos + nbyte - 1;
-    range = apr_psprintf(pool, "bytes=%" PRId64 "-%" PRId64, file->_stat.pos, end);
+    range = apr_psprintf(pool, "bytes=%" APR_INT64_T_FMT "-%" APR_INT64_T_FMT, file->_stat.pos, end);
 
     req_headers = aos_table_make(pool, 1);
     apr_table_set(req_headers, "Range", range);
@@ -229,7 +229,7 @@ int64_t oss_media_file_read(oss_media_file_t *file, void *buf, int64_t nbyte) {
         return -1;
     }
 
-    aos_list_for_each_entry(content, &buffer, node) {
+    aos_list_for_each_entry(aos_buf_t, content, &buffer, node) {
         size = aos_buf_size(content);
         memcpy(buf + offset, content->pos, size);
         offset += size;

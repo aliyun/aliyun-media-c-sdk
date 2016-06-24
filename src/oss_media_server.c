@@ -222,7 +222,7 @@ int oss_media_get_bucket_lifecycle(const oss_media_config_t *config,
     }
 
     i = 0;
-    aos_list_for_each_entry(rule_content, &rule_list, node) {
+    aos_list_for_each_entry(oss_lifecycle_rule_content_t, rule_content, &rule_list, node) {
         i++;
     }
     rules->size = i;
@@ -230,7 +230,7 @@ int oss_media_get_bucket_lifecycle(const oss_media_config_t *config,
                                sizeof(oss_media_lifecycle_rule_t) * rules->size);
 
     i = 0;
-    aos_list_for_each_entry(rule_content, &rule_list, node) {
+    aos_list_for_each_entry(oss_lifecycle_rule_content_t, rule_content, &rule_list, node) {
         oss_media_lifecycle_rule_t *rule = 
             aos_pcalloc(rules->_pool, sizeof(oss_media_lifecycle_rule_t));
         rule->name = aos_pstrdup(rules->_pool, &rule_content->id);
@@ -348,13 +348,13 @@ int oss_media_list_files(const oss_media_config_t *config,
     }
 
     head = &params->object_list;
-    aos_list_for_each_entry(content, head, node) {
+    aos_list_for_each_entry(oss_list_object_content_t, content, head, node) {
         files->size++;
     }
     files->file_names = calloc(sizeof(char *), files->size);
 
     i = 0;
-    aos_list_for_each_entry(content, head, node) {
+    aos_list_for_each_entry(oss_list_object_content_t, content, head, node) {
         files->file_names[i++] = strdup(content->key.data);
     }
 
