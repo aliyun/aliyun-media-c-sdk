@@ -13,21 +13,19 @@
 - 对设备的权限存在有效期，不能让设备永久持有某种权限`
 - 希望摄像机输出的音视频可以通过HLS协议直接被用户观看
 
-针对以上考虑，我们推出了OSS MEDIA C SDK 1.0.0，构建于OSS C SDK 2.0.0版本之上，可以方便的解决上述问题，为音视频行业提供更完善易用的解决方案。
+针对以上考虑，我们推出了OSS MEDIA C SDK 2.0.0，构建于OSS C SDK 3.0.0版本之上，可以方便的解决上述问题，为音视频行业提供更完善易用的解决方案。
 
 ## 版本
- - 当前版本：1.0.0
+ - 当前版本：2.0.0
 
 ### 版本更新
-- 新增H.264,aac转HLS基础接口
-- 新增H.264,aac转HLS的录播、直播封装接口
-- 优化client，server端接口
+- 支持C SDK v3.0.0版本
 
 ### 兼容性
-- 不兼容0.x.x 系列SDK，client相关接口发生变化。
+- 由于底层C SDK相对于前一版本不兼容导致Media SDK不兼容1.x.x系列SDK，不兼容接口主要涉及list相关
 
 ## 依赖
- - [OSS C SDK](https://github.com/aliyun/aliyun-oss-c-sdk)
+ - [OSS C SDK 3.0.0](https://github.com/aliyun/aliyun-oss-c-sdk)
 
 ## 使用
  - 示例程序：[参考sample部分](sample/)
