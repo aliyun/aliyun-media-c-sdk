@@ -170,7 +170,7 @@ static STSStatus responseCallback(int bufferSize, const char* buffer,
         return STSStatusResponseToLarge;
     }
     else {
-        snprintf(response, bufferSize+1, "%s", buffer);
+        snprintf(response+strlen(response), bufferSize+1, "%s", buffer);
     }
         
     return STSStatusOK;
@@ -225,12 +225,10 @@ STSStatus request_perform(RequestParams* params, int* httpResponseCode, char* re
         request->httpResponseCode = 0;
         *httpResponseCode = request->httpResponseCode;
         request->status = request_curl_code_to_status(code);
-        //fprintf(stderr, "Request Perform ERR\n");
         return request->status;
     }
     else {
         *httpResponseCode = request->httpResponseCode;
-        //fprintf(stdout, "\nRequest Perform OK\n");
         request_finish(request);
         return request->status;
     }
