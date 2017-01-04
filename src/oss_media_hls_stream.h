@@ -21,7 +21,7 @@ typedef struct oss_media_hls_stream_options_s {
  * this struct describes the properties of hls stream
  */
 typedef struct oss_media_hls_stream_s {
-    const oss_media_hls_stream_options_t *options;
+    oss_media_hls_stream_options_t *options;
     oss_media_hls_file_t *ts_file;
     oss_media_hls_file_t *m3u8_file;
     oss_media_hls_frame_t *video_frame;
