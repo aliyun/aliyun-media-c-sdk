@@ -18,7 +18,7 @@ static char *oss_media_create_new_ts_file_name(
         
     int16_t pos_digit_num = oss_media_get_digit_num(stream->ts_file_index);
     char pos_str[pos_digit_num + 1];
-    sprintf(pos_str, "%ld", stream->ts_file_index++);
+    sprintf(pos_str, APR_INT64_T_FMT, stream->ts_file_index++);
     
     return apr_psprintf(stream->pool, "%.*s%.*s%.*s",
                         (int)strlen(options->ts_name_prefix), 
@@ -28,7 +28,7 @@ static char *oss_media_create_new_ts_file_name(
                         OSS_MEDIA_TS_FILE_SURFIX);
 }
 
-void copy_hls_stream_options(oss_media_hls_stream_options_t* dst,
+void deep_copy_hls_stream_options(oss_media_hls_stream_options_t* dst,
         const oss_media_hls_stream_options_t* src)
 {
     memset(dst, 0, sizeof(oss_media_hls_stream_options_t));
@@ -63,7 +63,7 @@ oss_media_hls_stream_t* oss_media_hls_stream_open(auth_fn_t auth_func,
     oss_media_hls_stream_t *stream;
     stream = (oss_media_hls_stream_t*)malloc(sizeof(oss_media_hls_stream_t));
     stream->options = (oss_media_hls_stream_options_t*)malloc(sizeof(oss_media_hls_stream_options_t));
-    copy_hls_stream_options(stream->options, options);
+    deep_copy_hls_stream_options(stream->options, options);
     stream->ts_file_index = 0;
     stream->current_file_begin_pts = -1;
     stream->has_aud = 0;
