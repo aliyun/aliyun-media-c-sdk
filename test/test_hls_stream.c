@@ -211,6 +211,7 @@ void test_oss_media_write_m3u8_for_vod(CuTest *tc) {
     oss_media_hls_stream_t *stream;
     stream = oss_media_hls_stream_open(auth_func, &options);
     CuAssertTrue(tc, stream != NULL);
+    memset(&options, 0, sizeof(options));
 
     stream->ts_file->file->endpoint = "oss.abc.com";
     stream->ts_file->file->bucket_name = "bucket-1";
@@ -375,7 +376,7 @@ void test_close_and_open_new_file_with_open_failed(CuTest *tc) {
 
     stream->ts_file->options.handler_func = oss_media_hls_fake_handler;
     stream->ts_file->frame_count = 0;
-    memcpy(bucket, "b.1", strlen("b.1") + 1);
+    memcpy(stream->options->bucket_name, "b.1", strlen("b.1") + 1);
 
     ret = close_and_open_new_file(stream);
     CuAssertIntEquals(tc, -1, ret);    
