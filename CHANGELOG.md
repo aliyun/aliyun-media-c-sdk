@@ -1,5 +1,17 @@
 # ChangeLog - Aliyun OSS Media C SDK
 
+## 版本号：2.0.2 日期：2017-03-02
+### 变更内容
+- 优化oss_media_hls_stream_open的参数options深拷贝
+
+## 版本号：2.0.1 日期：2016-09-10
+### 变更内容
+- 修复STS AssumeRole获取无效ID/KEY/Tonken的Bug
+
+## 版本号：2.0.0 日期：2016-06-24
+### 变更内容
+- 支持OSS C SDK 3.0.0
+
 ## 版本号：1.0.0 日期：2016-03-06
 ### 变更内容
 - 新增H.264,aac转HLS基础接口
@@ -17,4 +29,3 @@
  - 优化、简化示例程序
  - 合并client和server两个项目，支持独立编译
  - 增加测试用例
-
