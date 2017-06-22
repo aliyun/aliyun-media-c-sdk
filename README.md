@@ -1,38 +1,42 @@
-# Aliyun OSS Media C SDK 
+﻿# Alibaba Cloud OSS Media C SDK 
 
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
-[![GitHub version](https://badge.fury.io/gh/aliyun%2Faliyun-media-c-sdk.svg)](https://badge.fury.io/gh/aliyun%2Faliyun-media-c-sdk)
+[![GitHub Version](https://badge.fury.io/gh/aliyun%2Faliyun-media-c-sdk.svg)](https://badge.fury.io/gh/aliyun%2Faliyun-media-c-sdk)
 
-## 关于
-不少情况下，我们都需要将摄像头拍摄的视频快速存储到云端（OSS），但是我们也有一些因素要考虑：
 
-- 设备上不能存储永久access key id和access key secret，因为可能泄露
-- 设备上只允许上传或者下载，不允许删除、修改配置等管理权限
-- 可以提供网页让用户去管理自己的视频
-- 对设备的权限精准控制
-- 对设备的权限存在有效期，不能让设备永久持有某种权限`
-- 希望摄像机输出的音视频可以通过HLS协议直接被用户观看
+## [README of Chinese](https://github.com/aliyun/aliyun-media-c-sdk/blob/master/README-CN.md)
 
-针对以上考虑，我们推出了OSS MEDIA C SDK 2.0.2，构建于OSS C SDK 3.4.0版本之上，可以方便的解决上述问题，为音视频行业提供更完善易用的解决方案。
+## About
+In many cases, we need to store the video captured by the camera to the [OSS](https://www.aliyun.com/product/oss). But we also have some considerations:
 
-## 版本
- - 当前版本：V2.0.2
+- The `AccessKeyID` and `AccessKeySecret` cannot be stored permanently on the device because it may be leaked.
+- The device only allows file uploads and downloads and does not allow administrative permissions such as deletion and configuration modification.
+- Webpages can be provided for you to manage your own videos.
+- Precise control over the device permission is provided.
+- The permission for the device has a validity period. A permission for a device cannot be held permanently.
+- The audio and video files output by the camera are expected to be directly watched through the *HLS* protocol.
 
-### 版本更新
-- 支持C SDK V3.4.0
+Out of the above considerations, we launched the *OSS MEDIA C SDK* built based on the *OSS C SDK*, which can conveniently solve the above mentioned issues and provide more improved and easy-to-use solutions for the audio and video industry.
 
-### 兼容性
-- 由于底层C SDK相对于前一版本不兼容导致Media SDK不兼容1.x.x系列SDK，不兼容接口主要涉及list相关
+## Version
+ - Current version: V2.0.2. 
 
-## 依赖
+### Compatibility
+- Because the underlying C SDK is not compatible with previous versions, the Media C SDK is not compatible with 1.x.x. Incompatible interfaces mainly involve those related with *list* operations. 
+
+## Dependency
  - [OSS C SDK 3.4.0](https://github.com/aliyun/aliyun-oss-c-sdk)
 
-## 使用
- - 示例程序：[参考sample部分](sample/)
- - SDK文档：[阿里云OSS MEDIA SDK文档](https://help.aliyun.com/document_detail/oss/sdk/media-c-sdk/preface.html)
+## Usage
+ - Example project: [Refer to sample section](sample/).
+ - Documentation: [OSS C MEDIA SDK Documentation](https://help.aliyun.com/document_detail/oss/sdk/media-c-sdk/preface.html). 
 
-## 联系我们
-- [阿里云OSS官方网站](http://oss.aliyun.com)  
-- [阿里云OSS官方论坛](http://bbs.aliyun.com)
-- [阿里云OSS官方文档中心](http://www.aliyun.com/product/oss#Docs)
-- 阿里云官方技术支持：[提交工单](https://workorder.console.aliyun.com/#/ticket/createIndex)   
+## License
+
+- MIT
+
+## Contact us
+- [Alibaba Cloud OSS official website](http://oss.aliyun.com).
+- [Alibaba Cloud OSS official forum](http://bbs.aliyun.com). 
+- [Alibaba Cloud OSS official documentation center](http://www.aliyun.com/product/oss#Docs).
+- Alibaba Cloud official technical support: [Submit a ticket](https://workorder.console.aliyun.com/#/ticket/createIndex).
