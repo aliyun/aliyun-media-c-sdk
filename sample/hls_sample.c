@@ -26,6 +26,7 @@ static void do_write(oss_media_hls_file_t *file) {
     int     video_frame_rate = 30;
     int     max_size = 10 * 1024 * 1024;
     char    *h264_file_name = SAMPLE_DIR"/data/example.h264";
+    uint8_t nal_type;
 
     buf_h264 = calloc(max_size, 1);
     file_h264 = fopen(h264_file_name, "r");
@@ -40,7 +41,10 @@ static void do_write(oss_media_hls_file_t *file) {
         if ((buf_h264[i] & 0x0F)==0x00 && buf_h264[i+1]==0x00 
             && buf_h264[i+2]==0x00 && buf_h264[i+3]==0x01) 
         {
-            cur_pos = i;
+            nal_type = buf_h264[i+4] & 0x1f;
+            if (nal_type == 9) { //Access unit delimiter
+                cur_pos = i;
+            }
         }
 
         if (last_pos != -1 && cur_pos > last_pos) {
