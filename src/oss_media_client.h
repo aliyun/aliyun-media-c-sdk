@@ -38,6 +38,7 @@ typedef struct oss_media_file_s {
     char   *access_key_secret;
     char   *token;
     char   *mode;
+    int    trunc_file;
     oss_media_file_stat_t _stat;
 
     time_t expiration;

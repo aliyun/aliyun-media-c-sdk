@@ -87,6 +87,7 @@ oss_media_file_t* oss_media_file_open(char *bucket_name,
     oss_auth(file, 1);
     
     file->mode = mode;
+    file->trunc_file = 1;
     file->_stat.pos = 0;
 
     file->bucket_name = bucket_name;
@@ -287,6 +288,20 @@ int64_t oss_media_file_write(oss_media_file_t *file, const void *buf, int64_t nb
             return -1;
         }
     } else {
+        if (file->trunc_file == 1 && file->_stat.length > 0) {
+            status = oss_delete_object(opts, &bucket, &key, &resp_headers);
+            if (!aos_status_is_ok(status)) {
+                aos_error_log("delete object failed. request_id:%s, code:%d, "
+                              "error_code:%s, error_message:%s",
+                              status->req_id, status->code, status->error_code,
+                              status->error_msg);
+                aos_pool_destroy(pool);
+                return -1;
+            }
+
+            file->trunc_file = 0;
+            file->_stat.length = 0;
+        }
         status = oss_append_object_from_buffer(opts, &bucket, &key, 
                 file->_stat.length, &buffer, req_headers, &resp_headers);
 

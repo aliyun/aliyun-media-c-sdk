@@ -18,7 +18,7 @@ static char *oss_media_create_new_ts_file_name(
         
     int16_t pos_digit_num = oss_media_get_digit_num(stream->ts_file_index);
     char pos_str[pos_digit_num + 1];
-    sprintf(pos_str, APR_INT64_T_FMT, stream->ts_file_index++);
+    sprintf(pos_str, "%"APR_INT64_T_FMT, stream->ts_file_index++);
     
     return apr_psprintf(stream->pool, "%.*s%.*s%.*s",
                         (int)strlen(options->ts_name_prefix), 
@@ -389,6 +389,7 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
     int64_t cur_pos = -1;
     int64_t last_pos = -1;
     int64_t inc_pts = 0;
+    uint8_t nal_type;
     oss_media_hls_frame_t *frame = stream->video_frame;
 
     if (len <= 0) {
@@ -408,9 +409,12 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
         if ((buf[i] & 0x0F) == 0x00 && buf[i+1] == 0x00
             && buf[i+2] == 0x00 && buf[i+3] == 0x01)
         {
-            cur_pos = i;
-            frame->frame_type = buf[last_pos+4] & 0x1F;
-            frame->key = frame->frame_type == ft_idr;
+            nal_type = buf[i+4] & 0x1f;
+            if (nal_type == 9) { //Access unit delimiter
+                cur_pos = i;
+                frame->frame_type = buf[last_pos+4] & 0x1F;
+                frame->key = frame->frame_type == ft_idr;
+            }
         }
 
         if (oss_media_extract_frame(buf, last_pos, cur_pos, inc_pts, frame)) {
