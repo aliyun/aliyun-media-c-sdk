@@ -319,7 +319,7 @@ oss_media_hls_file_t* oss_media_hls_open(char *bucket_name,
     
     file = (oss_media_hls_file_t*)malloc(sizeof(oss_media_hls_file_t));
     
-    file->file = oss_media_file_open(bucket_name, object_key, "a", auth_func);
+    file->file = oss_media_file_open(bucket_name, object_key, "aw", auth_func); //delete file and append write
     if (file->file == NULL) {
         aos_error_log("open oss media file failed.");
         free(file);

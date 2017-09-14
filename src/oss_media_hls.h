@@ -28,6 +28,7 @@ typedef enum {
 typedef enum {
     ft_unspecified = 0,
     ft_non_idr = 1,
+    ft_dpa = 2,
     ft_idr = 5,
     ft_sei = 6,
     ft_sps = 7,

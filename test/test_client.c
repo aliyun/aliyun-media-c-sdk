@@ -198,12 +198,27 @@ void test_append_file_failed_with_appendable_cover_normal(CuTest *tc) {
     CuAssertTrue(tc, NULL != file);
 
     write_size = oss_media_file_write(file, content, strlen(content));
-    CuAssertIntEquals(tc, -1, write_size);
+    CuAssertIntEquals(tc, write_size, -1);
 
     ret = oss_media_file_stat(file, &stat);
     CuAssertIntEquals(tc, 0, ret);
 
     CuAssertStrEquals(tc, "Normal", stat.type);
+    CuAssertIntEquals(tc, strlen(content), stat.length);
+    // close file
+    oss_media_file_close(file);
+
+    // open file
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "aw", auth_func);
+    CuAssertTrue(tc, NULL != file);
+
+    write_size = oss_media_file_write(file, content, strlen(content));
+    CuAssertIntEquals(tc, write_size, strlen(content));
+
+    ret = oss_media_file_stat(file, &stat);
+    CuAssertIntEquals(tc, 0, ret);
+
+    CuAssertStrEquals(tc, "Appendable", stat.type);
     CuAssertIntEquals(tc, strlen(content), stat.length);
 
     // close file and free

@@ -38,7 +38,6 @@ typedef struct oss_media_file_s {
     char   *access_key_secret;
     char   *token;
     char   *mode;
-    int    trunc_file;
     oss_media_file_stat_t _stat;
 
     time_t expiration;
@@ -88,6 +87,15 @@ void oss_media_file_close(oss_media_file_t *file);
  *      otherwise -1 is returned and code/message int struct of file is set to indicate the error.
  */
 int oss_media_file_stat(oss_media_file_t *file, oss_media_file_stat_t *stat);
+
+/**
+ *  @bref   delete file, this function delete the oss media file.
+ *  @return:
+ *      upon successful completion 0 is returned.
+ *      otherwise -1 is returned and code/message int struct of file is set to indicate the error.
+ */
+int oss_media_file_delete(oss_media_file_t *file);
+
 
 /**
  *  @brief  tell the position of the oss media file

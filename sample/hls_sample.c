@@ -37,7 +37,7 @@ static void do_write(oss_media_hls_file_t *file) {
     frame.continuity_counter = 1;
     frame.key = 1;
 
-    for (i = 0; i < len_h264; i++) {
+    for (i = 0; i < len_h264 - 5; i++) {
         if ((buf_h264[i] & 0x0F)==0x00 && buf_h264[i+1]==0x00 
             && buf_h264[i+2]==0x00 && buf_h264[i+3]==0x01) 
         {
@@ -59,6 +59,14 @@ static void do_write(oss_media_hls_file_t *file) {
 
         last_pos = cur_pos;
     }
+    
+    frame.pts += 90000 / video_frame_rate;
+    frame.dts = frame.pts;
+    
+    frame.pos = buf_h264 + last_pos;
+    frame.end = buf_h264 + len_h264;
+
+    oss_media_hls_write_frame(&frame, file);
 
     fclose(file_h264);
     free(buf_h264);

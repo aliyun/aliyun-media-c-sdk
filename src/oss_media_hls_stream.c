@@ -66,7 +66,6 @@ oss_media_hls_stream_t* oss_media_hls_stream_open(auth_fn_t auth_func,
     deep_copy_hls_stream_options(stream->options, options);
     stream->ts_file_index = 0;
     stream->current_file_begin_pts = -1;
-    stream->has_aud = 0;
 
     aos_pool_create(&stream->pool, NULL);
 
@@ -291,46 +290,6 @@ static int64_t oss_media_get_inc_pts(oss_media_hls_frame_t *frame,
     } 
 }
 
-static int oss_media_append_aud(oss_media_hls_frame_t *frame,
-                                oss_media_hls_stream_t *stream)
-{
-    static uint8_t aud_nal[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10};
-   
-    oss_media_hls_frame_t aud_frame;
-
-    if (frame->frame_type == ft_aud) {
-        stream->has_aud = 1;
-        return 0;
-    }
-
-    if (stream->has_aud) {
-        return 0;
-    }
-
-    if (frame->frame_type != ft_non_idr && frame->frame_type != ft_sps) {
-        return 0;
-    }
-
-    aud_frame.stream_type = st_h264;
-    aud_frame.frame_type = ft_aud;
-    aud_frame.pts = frame->pts;
-    aud_frame.dts = aud_frame.pts;
-    aud_frame.continuity_counter = frame->continuity_counter;
-    aud_frame.key = 0;
-    aud_frame.pos = aud_nal;
-    aud_frame.end = aud_nal + sizeof(aud_nal);
-
-    if(oss_media_hls_write_frame(&aud_frame, stream->ts_file) != 0) {
-        aos_error_log("write aud frame failed.");
-        return -1;
-    }
-    
-    frame->continuity_counter = aud_frame.continuity_counter;
-    frame->pts += oss_media_get_inc_pts(frame, stream);
-    frame->dts = frame->pts;
-    return 0;
-}
-
 static int oss_media_write_stream_frame(oss_media_hls_frame_t *frame,
                                         oss_media_hls_stream_t *stream)
 {
@@ -352,17 +311,30 @@ static int oss_media_write_stream_frame(oss_media_hls_frame_t *frame,
         }
     }
 
-    if (oss_media_append_aud(frame, stream) != 0) {
-        aos_error_log("append aud failed.");
-        return -1;
+    uint8_t *buf = NULL;
+    uint8_t* org_end = frame->end;
+    if (frame->frame_type != ft_aud) {
+        //add aud nal at the front
+        uint8_t aud_nal[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x10};
+        int len = frame->end - frame->pos;
+        buf = (uint8_t*)malloc(sizeof(aud_nal) + len);    
+        memcpy(buf, aud_nal, sizeof(aud_nal));
+        memcpy(buf + sizeof(aud_nal), frame->pos, len);
+        frame->pos = buf;
+        frame->end = buf + sizeof(aud_nal) + len;
     }
-    
+
     int ret = oss_media_hls_write_frame(frame, stream->ts_file);
     if (ret != 0) {
         aos_error_log("write frame failed.");
-        return -1;
     }
-    return 0;
+
+    frame->end = org_end;
+    frame->pos = frame->end;
+    if (buf != NULL)
+        free(buf);
+
+    return ret;
 }
 
 static int oss_media_extract_frame(uint8_t *buf, 
@@ -390,6 +362,8 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
     int64_t last_pos = -1;
     int64_t inc_pts = 0;
     uint8_t nal_type;
+    int frame_start_found = 0;
+    int frame_end_found = 0;
     oss_media_hls_frame_t *frame = stream->video_frame;
 
     if (len <= 0) {
@@ -405,12 +379,28 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
     last_pos = frame->pos - buf;
     cur_pos = last_pos;
     inc_pts = oss_media_get_inc_pts(frame, stream);
-    for (i = frame->end - buf; i < len - 4; i++) {
+    //ref: ffmpeg h264_find_frame_end()
+    for (i = frame->end - buf; i < len - 5; i++) {
         if ((buf[i] & 0x0F) == 0x00 && buf[i+1] == 0x00
             && buf[i+2] == 0x00 && buf[i+3] == 0x01)
         {
-            nal_type = buf[i+4] & 0x1f;
-            if (nal_type == 9) { //Access unit delimiter
+            nal_type = buf[i+4] & 0x1F;
+            if (nal_type == ft_sei || nal_type == ft_sps
+                || nal_type == ft_pps || nal_type == ft_aud) {
+                if (frame_start_found) {
+                    frame_start_found = 0;
+                    frame_end_found = 1;
+                }
+            } else if (nal_type == ft_idr || nal_type == ft_non_idr || nal_type == ft_dpa) {
+                if (frame_start_found) {
+                    frame_end_found = 1;
+                } else {
+                    frame_start_found = 1;
+                }
+            }
+
+            if (frame_end_found) {
+                frame_end_found = 0;
                 cur_pos = i;
                 frame->frame_type = buf[last_pos+4] & 0x1F;
                 frame->key = frame->frame_type == ft_idr;
