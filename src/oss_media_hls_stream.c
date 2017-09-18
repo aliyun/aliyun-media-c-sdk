@@ -393,6 +393,7 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
                 }
             } else if (nal_type == ft_idr || nal_type == ft_non_idr || nal_type == ft_dpa) {
                 if (frame_start_found) {
+                    frame_start_found = 0;
                     frame_end_found = 1;
                 } else {
                     frame_start_found = 1;

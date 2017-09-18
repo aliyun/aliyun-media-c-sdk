@@ -198,7 +198,7 @@ void test_append_file_failed_with_appendable_cover_normal(CuTest *tc) {
     CuAssertTrue(tc, NULL != file);
 
     write_size = oss_media_file_write(file, content, strlen(content));
-    CuAssertIntEquals(tc, write_size, -1);
+    CuAssertIntEquals(tc, -1, write_size);
 
     ret = oss_media_file_stat(file, &stat);
     CuAssertIntEquals(tc, 0, ret);
