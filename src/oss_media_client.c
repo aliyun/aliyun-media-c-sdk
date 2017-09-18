@@ -191,6 +191,7 @@ int oss_media_file_delete(oss_media_file_t *file) {
         return -1;
     }
 
+    aos_pool_destroy(pool);
     return 0;
 }
 
