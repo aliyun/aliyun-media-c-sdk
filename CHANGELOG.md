@@ -1,5 +1,11 @@
 # ChangeLog - Aliyun OSS Media C SDK
 
+## 版本号：2.0.3 日期：2017-09-18
+### 变更内容
+- 修改生成的ts文件名格式化参数
+- 优化解析H264 frame的逻辑，解决生成的ts文件时间戳不对的问题
+- 生成ts文件或者m3u8文件之前会先删除老文件
+
 ## 版本号：2.0.2 日期：2017-03-02
 ### 变更内容
 - 优化oss_media_hls_stream_open的参数options深拷贝
