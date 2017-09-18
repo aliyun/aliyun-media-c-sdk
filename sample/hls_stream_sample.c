@@ -100,7 +100,7 @@ static void write_only_audio_vod() {
     options.bucket_name = SAMPLE_BUCKET_NAME;
     options.ts_name_prefix = "vod/audio/test";
     options.m3u8_name = "vod/audio/vod.m3u8";
-    options.audio_sample_rate = 24000;
+    options.audio_sample_rate = 8000;
     options.hls_time = 5;
     
     stream = oss_media_hls_stream_open(auth_func, &options);
@@ -172,7 +172,7 @@ static void write_video_audio_vod() {
     options.ts_name_prefix = "vod/video_audio/test";
     options.m3u8_name = "vod/video_audio/vod.m3u8";
     options.video_frame_rate = 30;
-    options.audio_sample_rate = 24000;
+    options.audio_sample_rate = 8000;
     options.hls_time = 5;
     
     stream = oss_media_hls_stream_open(auth_func, &options);
@@ -260,7 +260,7 @@ static void write_video_audio_live() {
     options.ts_name_prefix = "live/video_audio/test";
     options.m3u8_name = "live/video_audio/live.m3u8";
     options.video_frame_rate = 30;
-    options.audio_sample_rate = 24000;
+    options.audio_sample_rate = 8000;
     options.hls_time = 5;
     options.hls_list_size = 5;
     

@@ -76,7 +76,7 @@ oss_media_file_t* oss_media_file_open(char *bucket_name,
     }
 
     if (!(strcmp("r", mode) == 0 || strcmp("w", mode) == 0 
-          || strcmp("a", mode) == 0)) 
+          || strcmp("a", mode) == 0 || strcmp("aw", mode) == 0)) 
     {
         free(file);
         aos_error_log("mode[%s] is wrong\n", mode);
@@ -91,6 +91,18 @@ oss_media_file_t* oss_media_file_open(char *bucket_name,
 
     file->bucket_name = bucket_name;
     file->object_key = object_key;
+
+    if (strcmp("aw", mode) == 0) {
+        if ( 0 != oss_media_file_delete(file)) {
+            aos_error_log("stat file[%s] failed.\n", file->object_key);
+            free(file);
+            file = NULL;
+            return NULL;
+        }
+        file->_stat.length = 0;
+        file->_stat.type = OSS_MEDIA_FILE_UNKNOWN_TYPE;
+        return file;
+    }
 
     if (0 != oss_media_file_stat(file, &(file->_stat))) {
         aos_error_log("stat file[%s] failed.\n", file->object_key);
@@ -150,6 +162,37 @@ int oss_media_file_stat(oss_media_file_t *file, oss_media_file_stat_t *stat) {
                   status->error_msg, status->req_id);
     aos_pool_destroy(pool);
     return -1;
+}
+
+int oss_media_file_delete(oss_media_file_t *file) {
+    aos_pool_t *pool = NULL;
+    oss_request_options_t *opts = NULL;
+    aos_string_t bucket;
+    aos_string_t key;
+    aos_status_t *status = NULL;
+    aos_table_t *req_headers = NULL;
+    aos_table_t *resp_headers = NULL;
+
+    oss_auth(file, 0);
+
+    aos_pool_create(&pool, NULL);
+    oss_init_request_opts(pool, file, &opts);
+    req_headers = aos_table_make(pool, 0);
+    aos_str_set(&bucket, file->bucket_name);
+    aos_str_set(&key, file->object_key);
+
+    status = oss_delete_object(opts, &bucket, &key, &resp_headers);
+    if (!aos_status_is_ok(status)) {
+        aos_error_log("delete object failed. request_id:%s, code:%d, "
+                      "error_code:%s, error_message:%s",
+                      status->req_id, status->code, status->error_code,
+                      status->error_msg);
+        aos_pool_destroy(pool);
+        return -1;
+    }
+
+    aos_pool_destroy(pool);
+    return 0;
 }
 
 int64_t oss_media_file_tell(oss_media_file_t *file) {
@@ -256,7 +299,8 @@ int64_t oss_media_file_write(oss_media_file_t *file, const void *buf, int64_t nb
     oss_auth(file, 0);
 
     if (!file->mode || (strcmp("w", file->mode) != 0 && 
-                        strcmp("a", file->mode) != 0)) 
+                        strcmp("a", file->mode) != 0 &&
+                        strcmp("aw", file->mode) != 0)) 
     {
         aos_error_log("file mode[%s] is not [w/a]\n", file->mode);
         return -1;

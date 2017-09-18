@@ -52,7 +52,7 @@ void test_oss_media_hls_stream_open_with_vod(CuTest *tc) {
     CuAssertTrue(tc, NULL != stream->options);
     CuAssertStrEquals(tc, "test0.ts", stream->ts_file->file->object_key);
     CuAssertStrEquals(tc, "test.m3u8", stream->m3u8_file->file->object_key);
-    CuAssertStrEquals(tc, "a", stream->m3u8_file->file->mode);
+    CuAssertStrEquals(tc, "aw", stream->m3u8_file->file->mode);
     CuAssertIntEquals(tc, st_h264, stream->video_frame->stream_type);
     CuAssertIntEquals(tc, 1, stream->video_frame->continuity_counter);
     CuAssertIntEquals(tc, 1, stream->video_frame->key);
@@ -603,6 +603,9 @@ void test_oss_media_write_stream_frame_with_write_frame_failed(CuTest *tc) {
     frame.pts = 5000;
     frame.dts = 5000;
     frame.stream_type = st_mp3;
+    uint8_t buf[] = "12323423423";
+    frame.pos = buf;
+    frame.end = buf + sizeof(buf);
     
     ret = oss_media_write_stream_frame(&frame, stream);
     CuAssertIntEquals(tc, -1, ret);
@@ -774,7 +777,7 @@ void test_oss_media_get_video_frame_with_get_first_frame(CuTest *tc) {
     ret = oss_media_get_video_frame(buf, sizeof(buf), stream);
     CuAssertIntEquals(tc, 1, ret);
     CuAssertPtrEquals(tc, buf, stream->video_frame->pos);
-    CuAssertPtrEquals(tc, buf + 6, stream->video_frame->end);
+    CuAssertPtrEquals(tc, buf + 11, stream->video_frame->end);
     CuAssertIntEquals(tc, 5000 + 90 * options.video_frame_rate,
                       stream->video_frame->pts);
     CuAssertIntEquals(tc, stream->video_frame->dts, stream->video_frame->pts);
@@ -1075,7 +1078,7 @@ void test_oss_media_hls_stream_write(CuTest *tc) {
     ret = oss_media_hls_stream_write(video_buf, sizeof(video_buf),
                                     audio_buf, sizeof(audio_buf), stream);
     CuAssertIntEquals(tc, 0, ret);
-    CuAssertIntEquals(tc, 1692, stream->ts_file->buffer->pos);
+    CuAssertIntEquals(tc, 1316, stream->ts_file->buffer->pos);
 
     oss_media_hls_stream_flush(10, stream);    
     delete_file(stream->ts_file->file);
@@ -1109,9 +1112,44 @@ void test_oss_media_hls_stream_write_with_same_pts(CuTest *tc) {
     ret = oss_media_hls_stream_write(video_buf, sizeof(video_buf),
                                     audio_buf, sizeof(audio_buf), stream);
     CuAssertIntEquals(tc, 0, ret);
-    CuAssertIntEquals(tc, 1692, stream->ts_file->buffer->pos);
+    CuAssertIntEquals(tc, 1316, stream->ts_file->buffer->pos);
 
     oss_media_hls_stream_flush(10, stream);
+    delete_file(stream->ts_file->file);
+    delete_file(stream->m3u8_file->file);
+    oss_media_hls_stream_close(stream);
+}
+
+void test_oss_media_hls_stream_write_no_aud(CuTest *tc) {
+    oss_media_hls_stream_options_t options;
+    options.ts_name_prefix = "test73-";
+    options.bucket_name = TEST_BUCKET_NAME;
+    options.m3u8_name = "test73.m3u8";
+    options.is_live = 0;
+    options.video_frame_rate = 33;
+    options.audio_sample_rate = 24000;
+    options.hls_time = 5;
+
+    uint8_t video_buf[] = {0x00, 0x00, 0x00, 0x01, 0x85, 0x1f, 0xfa,
+                           0x00, 0x00, 0x00, 0x01, 0x81, 0x1f, 0xff,
+                           0x00, 0x00, 0x00, 0x01, 0x82, 0x1f, 0xff,
+                           0x00, 0x00, 0x00, 0x01, 0x63, 0xba, 0xfa};
+    uint8_t audio_buf[] = {0xFF, 0xF0, 0x00, 0x91, 0x9d, 0xad,
+                           0xFF, 0xF0, 0x00, 0x91, 0x9d, 0xad,
+                           0xFF, 0xF0, 0x00, 0x91, 0x9d, 0xad,
+                           0xFF, 0xF0, 0x00, 0x91, 0x9d, 0xad};
+    
+    int ret;
+    oss_media_hls_stream_t *stream;
+    stream = oss_media_hls_stream_open(auth_func, &options);
+    CuAssertTrue(tc, stream != NULL);
+
+    ret = oss_media_hls_stream_write(video_buf, sizeof(video_buf),
+                                    audio_buf, sizeof(audio_buf), stream);
+    CuAssertIntEquals(tc, 0, ret);
+    CuAssertIntEquals(tc, 1692, stream->ts_file->buffer->pos);
+
+    oss_media_hls_stream_flush(10, stream);    
     delete_file(stream->ts_file->file);
     delete_file(stream->m3u8_file->file);
     oss_media_hls_stream_close(stream);
@@ -1174,7 +1212,7 @@ void test_oss_media_hls_stream_close_for_vod(CuTest *tc) {
     CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_hls_stream_write(video_buf, sizeof(video_buf),
-                                    audio_buf, 0, stream);
+                                    audio_buf, sizeof(audio_buf), stream);
     CuAssertIntEquals(tc, 0, ret);
 
     // read ts file content
@@ -1211,7 +1249,7 @@ void test_oss_media_hls_stream_close_for_vod(CuTest *tc) {
 
     buffer = (uint8_t*)malloc(18800);
     length = oss_media_file_read(ts_file, buffer, 1880);
-    CuAssertIntEquals(tc, 1128, length);
+    CuAssertIntEquals(tc, 940, length);
 
     delete_file(ts_file);
     oss_media_file_close(ts_file);
@@ -1225,7 +1263,7 @@ void test_oss_media_hls_stream_close_for_vod(CuTest *tc) {
     file_len = m3u8_file->_stat.length;
     buffer = (uint8_t*)malloc(file_len);
     length = oss_media_file_read(m3u8_file, buffer, file_len);
-    CuAssertIntEquals(tc, 161, length);    
+    CuAssertIntEquals(tc, 163, length);    
 
     delete_file(m3u8_file);
     oss_media_file_close(m3u8_file);
@@ -1256,7 +1294,7 @@ void test_oss_media_hls_stream_close_for_live(CuTest *tc) {
     CuAssertTrue(tc, stream != NULL);
 
     ret = oss_media_hls_stream_write(video_buf, sizeof(video_buf),
-                                    audio_buf, 0, stream);
+                                    audio_buf, sizeof(audio_buf), stream);
     CuAssertIntEquals(tc, 0, ret);
 
     ret = oss_media_hls_stream_close(stream);
@@ -1269,7 +1307,7 @@ void test_oss_media_hls_stream_close_for_live(CuTest *tc) {
 
     uint8_t *buffer = (uint8_t*)malloc(1880);
     int length = oss_media_file_read(ts_file, buffer, 1880);
-    CuAssertIntEquals(tc, 1128, length);
+    CuAssertIntEquals(tc, 940, length);
 
     delete_file(ts_file);
     oss_media_file_close(ts_file);
@@ -1283,7 +1321,7 @@ void test_oss_media_hls_stream_close_for_live(CuTest *tc) {
     int64_t file_len = m3u8_file->_stat.length;
     buffer = (uint8_t*)malloc(file_len);
     length = oss_media_file_read(m3u8_file, buffer, file_len);
-    CuAssertIntEquals(tc, 147, length);
+    CuAssertIntEquals(tc, 148, length);
     
     delete_file(m3u8_file);
     oss_media_file_close(m3u8_file);
@@ -1352,6 +1390,7 @@ CuSuite *test_hls_stream()
     SUITE_ADD_TEST(suite, test_oss_media_hls_stream_write_with_only_audio);
     SUITE_ADD_TEST(suite, test_oss_media_hls_stream_write);
     SUITE_ADD_TEST(suite, test_oss_media_hls_stream_write_with_same_pts);
+    SUITE_ADD_TEST(suite, test_oss_media_hls_stream_write_no_aud);
     SUITE_ADD_TEST(suite, test_oss_media_hls_stream_write_failed);
     SUITE_ADD_TEST(suite, test_oss_media_hls_stream_close_for_vod);
     SUITE_ADD_TEST(suite, test_oss_media_hls_stream_close_for_live);

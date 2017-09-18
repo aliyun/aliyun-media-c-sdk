@@ -319,7 +319,7 @@ oss_media_hls_file_t* oss_media_hls_open(char *bucket_name,
     
     file = (oss_media_hls_file_t*)malloc(sizeof(oss_media_hls_file_t));
     
-    file->file = oss_media_file_open(bucket_name, object_key, "a", auth_func);
+    file->file = oss_media_file_open(bucket_name, object_key, "aw", auth_func); //delete file and append write
     if (file->file == NULL) {
         aos_error_log("open oss media file failed.");
         free(file);
@@ -497,7 +497,7 @@ void oss_media_hls_begin_m3u8(int32_t max_duration,
 }
 
 void oss_media_hls_end_m3u8(oss_media_hls_file_t *file) {
-    static const char *end = "#EXT-X-ENDLIST";
+    static const char *end = "#EXT-X-ENDLIST\n";
     memcpy(&file->buffer->buf[file->buffer->pos], end, strlen(end));
     file->buffer->pos += strlen(end);
 }

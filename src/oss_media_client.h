@@ -89,6 +89,15 @@ void oss_media_file_close(oss_media_file_t *file);
 int oss_media_file_stat(oss_media_file_t *file, oss_media_file_stat_t *stat);
 
 /**
+ *  @bref   delete file, this function delete the oss media file.
+ *  @return:
+ *      upon successful completion 0 is returned.
+ *      otherwise -1 is returned and code/message int struct of file is set to indicate the error.
+ */
+int oss_media_file_delete(oss_media_file_t *file);
+
+
+/**
  *  @brief  tell the position of the oss media file
  *  @return:
  *      upon successful return the position of the oss media file.
