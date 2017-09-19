@@ -416,16 +416,14 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
     return oss_media_extract_frame(buf, last_pos, len, inc_pts, frame);
 }
 
-static unsigned int get_bits(uint8_t *buf, int start, int n)
+static int get_bits(uint8_t *buf, int start, int n)
 {
     int i = start;
     int res = 0;
 
     while (--n >= 0) {
         res <<= 1;
-        uint8_t val;
-        val = ((buf[i / 8] >> (7 - i % 8)) & 1);
-        res |= val;
+        res |= ((buf[i / 8] >> (7 - i % 8)) & 1);
         i++;
     }
     return res;
@@ -435,13 +433,13 @@ static unsigned int get_bits(uint8_t *buf, int start, int n)
 
 static int get_aac_frame_length(uint8_t *buf, uint64_t len)
 {
-    if (len <= AAC_ADTS_HEADER_SIZE) {
+    if (len < AAC_ADTS_HEADER_SIZE) {
         return -1;
     }
 
     int frame_length = get_bits(buf, 30, 13);
     if (frame_length > len || frame_length < AAC_ADTS_HEADER_SIZE) {
-        aos_error_log("invalid frame length %d", frame_length);
+        aos_debug_log("invalid frame length %d", frame_length);
         return -1;
     }
     aos_debug_log("aac frame length %d", frame_length);
