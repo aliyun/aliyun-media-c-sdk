@@ -423,23 +423,28 @@ static unsigned int get_bits(uint8_t *buf, int start, int n)
 
     while (--n >= 0) {
         res <<= 1;
-        res |= ((buf[i / 8] >> (8 - i % 8)) & 1);
-        printf("[%d] %p %d 0x%x %d\n", n, buf, i, res, ((buf[i / 8] >> (8 - i % 8)) & 1));
+        uint8_t val;
+        val = ((buf[i / 8] >> (7 - i % 8)) & 1);
+        res |= val;
         i++;
     }
     return res;
 }
 
+#define AAC_ADTS_HEADER_SIZE 7
+
 static int get_aac_frame_length(uint8_t *buf, uint64_t len)
 {
-    if (len <= 6) { //aac header size
+    if (len <= AAC_ADTS_HEADER_SIZE) {
         return -1;
     }
 
-    int frame_length = get_bits(buf, 31, 13);
-    if (frame_length > len) {
+    int frame_length = get_bits(buf, 30, 13);
+    if (frame_length > len || frame_length < AAC_ADTS_HEADER_SIZE) {
+        aos_error_log("invalid frame length %d", frame_length);
         return -1;
     }
+    aos_debug_log("aac frame length %d", frame_length);
     return frame_length;
 }
 
