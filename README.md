@@ -19,7 +19,7 @@ In many cases, we need to store the video captured by the camera to the [OSS](ht
 Out of the above considerations, we launched the *OSS MEDIA C SDK* built based on the *OSS C SDK*, which can conveniently solve the above mentioned issues and provide more improved and easy-to-use solutions for the audio and video industry.
 
 ## Version
- - Current version: V2.0.2. 
+ - Current version: V2.1.0. 
 
 ### Compatibility
 - Because the underlying C SDK is not compatible with previous versions, the Media C SDK is not compatible with 1.x.x. Incompatible interfaces mainly involve those related with *list* operations. 
