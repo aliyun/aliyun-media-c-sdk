@@ -283,10 +283,10 @@ static int64_t oss_media_get_inc_pts(oss_media_hls_frame_t *frame,
 {
     int64_t samples_per_frame;
     if (frame->stream_type == st_h264) {
-        return 90 * stream->options->video_frame_rate;
+        return 90000 / stream->options->video_frame_rate;
     } else {
         samples_per_frame = oss_media_get_samples_per_frame(stream);
-        return (90000 * samples_per_frame) / stream->options->audio_sample_rate;
+        return (90000LL * samples_per_frame) / stream->options->audio_sample_rate;
     } 
 }
 
@@ -416,6 +416,36 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
     return oss_media_extract_frame(buf, last_pos, len, inc_pts, frame);
 }
 
+static int get_bits(uint8_t *buf, int start, int n)
+{
+    int i = start;
+    int res = 0;
+
+    while (--n >= 0) {
+        res <<= 1;
+        res |= ((buf[i / 8] >> (7 - i % 8)) & 1);
+        i++;
+    }
+    return res;
+}
+
+#define AAC_ADTS_HEADER_SIZE 7
+
+static int get_aac_frame_length(uint8_t *buf, uint64_t len)
+{
+    if (len < AAC_ADTS_HEADER_SIZE) {
+        return -1;
+    }
+
+    int frame_length = get_bits(buf, 30, 13);
+    if (frame_length > len || frame_length < AAC_ADTS_HEADER_SIZE) {
+        aos_debug_log("invalid frame length %d", frame_length);
+        return -1;
+    }
+    aos_debug_log("aac frame length %d", frame_length);
+    return frame_length;
+}
+
 static int oss_media_get_audio_frame(uint8_t *buf, uint64_t len, 
                                      oss_media_hls_stream_t *stream)
 {
@@ -442,7 +472,11 @@ static int oss_media_get_audio_frame(uint8_t *buf, uint64_t len,
     for (i = frame->end - buf; i < len - 1; i++) {
         if (buf[i] == 0xFF && (buf[i+1] & 0xF0) == 0xF0)
         {
-            cur_pos = i;
+            int length = get_aac_frame_length(&buf[i], len - i);
+            if (length > 0) {
+                i += length;
+                cur_pos = i;
+            }
         }
 
         if (oss_media_extract_frame(buf, last_pos, cur_pos, inc_pts, frame)) {
