@@ -57,6 +57,14 @@ int oss_media_init(aos_log_level_e log_level);
 void oss_media_destroy();
 
 /**
+ *  @brief  oss media set retry configuration
+ *  @param[in]  retry count, default is 1.
+ *  @param[in]  sleep time before next try, the unit is us (1/1000000 s), default is 5000 us.
+ *  @note   this function should be called if you want to change the default retry configuration
+ */
+void oss_media_set_retry_config(int retry, int sleep_us);
+
+/**
  *  @brief  open oss media file, this function opens the oss media file.
  *  @param[in]  bucket_name the bucket name for store file in oss
  *  @param[in]  object_key the object name for oss file

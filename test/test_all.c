@@ -2,6 +2,7 @@
 #include "oss_c_sdk/aos_log.h"
 #include "oss_c_sdk/aos_http_io.h"
 #include "src/oss_media_define.h"
+#include "src/oss_media_client.h"
 
 extern CuSuite *test_client();
 extern CuSuite *test_server();

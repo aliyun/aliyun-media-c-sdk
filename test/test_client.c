@@ -14,6 +14,8 @@ void test_client_setup(CuTest *tc) {
     
     apr_dir_make(TEST_DIR"/data/", APR_OS_DEFAULT, p);
 
+    oss_media_set_retry_config(2, 2000000);
+    
     aos_pool_destroy(p);
 }
 
@@ -54,6 +56,8 @@ void test_write_file_succeeded(CuTest *tc) {
 
     // close file
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_append_file_succeeded(CuTest *tc) {
@@ -87,6 +91,8 @@ void test_append_file_succeeded(CuTest *tc) {
     // close file
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_write_file_failed_with_invalid_key(CuTest *tc) {
@@ -111,6 +117,8 @@ void test_write_file_failed_with_invalid_key(CuTest *tc) {
     // close file
     delete_file(file);
     oss_media_file_close(file);
+    
+    printf("%s ok\n", __FUNCTION__);
 }
 
 
@@ -131,6 +139,8 @@ void test_write_file_failed_with_wrong_flag(CuTest *tc) {
 
     // close file
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_write_file_with_normal_cover_appendable(CuTest *tc) {
@@ -171,6 +181,8 @@ void test_write_file_with_normal_cover_appendable(CuTest *tc) {
     // close file and free
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_append_file_failed_with_appendable_cover_normal(CuTest *tc) {
@@ -224,6 +236,8 @@ void test_append_file_failed_with_appendable_cover_normal(CuTest *tc) {
     // close file and free
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_read_file_succeeded(CuTest *tc) {
@@ -258,6 +272,8 @@ void test_read_file_succeeded(CuTest *tc) {
     free(read_content);
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_read_part_file_succeeded(CuTest *tc) {
@@ -309,6 +325,8 @@ void test_read_part_file_succeeded(CuTest *tc) {
     free(read_content);
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_read_file_failed_with_wrong_flag(CuTest *tc) {
@@ -333,6 +351,8 @@ void test_read_file_failed_with_wrong_flag(CuTest *tc) {
     // close file
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_read_file_failed_with_eof(CuTest *tc) {
@@ -369,6 +389,8 @@ void test_read_file_failed_with_eof(CuTest *tc) {
     // close file
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_read_file_failed_with_key_is_not_exist(CuTest *tc) {
@@ -394,6 +416,8 @@ void test_read_file_failed_with_key_is_not_exist(CuTest *tc) {
     // close file
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_read_file_failed_with_invalid_key(CuTest *tc) {
@@ -419,6 +443,8 @@ void test_read_file_failed_with_invalid_key(CuTest *tc) {
     // close file
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_seek_file_failed_with_invalid_pos(CuTest *tc) {
@@ -441,9 +467,11 @@ void test_seek_file_failed_with_invalid_pos(CuTest *tc) {
     // close file
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
-void test_seek_file_failed_with_file_not_exist(CuTest *tc) {
+void test_stat_file_failed_with_file_not_exist(CuTest *tc) {
     int64_t write_size = 0;
     oss_media_file_t *file = NULL;
     char *write_content = NULL;
@@ -457,23 +485,20 @@ void test_seek_file_failed_with_file_not_exist(CuTest *tc) {
     file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "r", auth_func);
     CuAssertTrue(tc, NULL != file);
 
-    file->object_key = "not_exist.key";
+    file->access_key_id = "access_key_id";
 
-    // seek file
-    ret = oss_media_file_seek(file, 1);
-    CuAssertIntEquals(tc, -1, ret);
-
-    // tell file
-    ret = oss_media_file_tell(file);
-    CuAssertIntEquals(tc, -1, ret);
+    //aos_log_set_level(AOS_LOG_DEBUG);
 
     // stat file
     ret = oss_media_file_stat(file, &stat);
     CuAssertIntEquals(tc, -1, ret);
 
     // close file
+    file->access_key_id = TEST_ACCESS_KEY_ID;
     delete_file(file);
     oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 void test_open_file_failed_with_wrong_flag(CuTest *tc) {
@@ -482,6 +507,8 @@ void test_open_file_failed_with_wrong_flag(CuTest *tc) {
     // open file for read
     file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file", "x", auth_func);
     CuAssertTrue(tc, NULL == file);
+
+    printf("%s ok\n", __FUNCTION__);
 }
 
 static void auth_func(oss_media_file_t *file) {
@@ -558,6 +585,7 @@ CuSuite *test_client()
 
     //seek / tell / stat test
     SUITE_ADD_TEST(suite, test_seek_file_failed_with_invalid_pos);
+    SUITE_ADD_TEST(suite, test_stat_file_failed_with_file_not_exist);
 
     // open test
     SUITE_ADD_TEST(suite, test_open_file_failed_with_wrong_flag);

@@ -6,6 +6,7 @@
 #include "src/sts/libsts.h"
 #include <oss_c_sdk/aos_define.h>
 #include <oss_c_sdk/aos_status.h>
+#include <unistd.h>
 
 static void init_media_config(oss_media_config_t *config);
 static void delete_file(oss_media_file_t *file);
