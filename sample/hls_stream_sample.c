@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "src/oss_media_hls_stream.h"
 #include "config.h"
 #include "sample.h"

@@ -1,4 +1,9 @@
 #include "oss_media_client.h"
+#include <unistd.h>
+
+static int oss_media_retry_cnt = 1;
+static int oss_media_sleep_us = 5000;
+#define MAX_RETRY_CNT 30
 
 extern void oss_op_debug(char *op, 
                          aos_status_t *status, 
@@ -64,6 +69,11 @@ void oss_media_destroy() {
     aos_http_io_deinitialize();
 }
 
+void oss_media_set_retry_config(int retry, int sleep_us) {
+    oss_media_retry_cnt = retry;
+    oss_media_sleep_us = sleep_us;
+}
+
 oss_media_file_t* oss_media_file_open(char *bucket_name,
                                       char *object_key,
                                       char *mode,
@@ -120,7 +130,7 @@ void oss_media_file_close(oss_media_file_t *file) {
     }
 }
 
-int oss_media_file_stat(oss_media_file_t *file, oss_media_file_stat_t *stat) {
+static int oss_media_file_stat_internal(oss_media_file_t *file, oss_media_file_stat_t *stat, int try_cnt) {
     aos_pool_t *pool = NULL;
     oss_request_options_t *opts = NULL;
     aos_string_t bucket;
@@ -157,14 +167,30 @@ int oss_media_file_stat(oss_media_file_t *file, oss_media_file_stat_t *stat) {
         return 0;
     }
 
-    aos_error_log("head object[%s] failed. http code:%d, code:%s, msg:%s, req:%s",
-                  file->object_key, status->code, status->error_code,
-                  status->error_msg, status->req_id);
+    aos_error_log("head object[%s] failed. request_id:%s, code:%d, "
+                      "error_code:%s, error_message:%s, try_cnt:%d",
+                  file->object_key, status->req_id, status->code, 
+                  status->error_code, status->error_msg, try_cnt);
     aos_pool_destroy(pool);
     return -1;
 }
 
-int oss_media_file_delete(oss_media_file_t *file) {
+int oss_media_file_stat(oss_media_file_t *file, oss_media_file_stat_t *stat) {
+    int try_cnt = 1;
+    int ret = 0;
+    do {
+        if ((ret = oss_media_file_stat_internal(file, stat, try_cnt)) != -1)
+            break;
+        
+        if (++try_cnt > oss_media_retry_cnt)
+            break;
+        usleep(oss_media_sleep_us);
+    } while (try_cnt < MAX_RETRY_CNT);
+
+    return ret;
+}
+
+static int oss_media_file_delete_internal(oss_media_file_t *file, int try_cnt) {
     aos_pool_t *pool = NULL;
     oss_request_options_t *opts = NULL;
     aos_string_t bucket;
@@ -184,15 +210,30 @@ int oss_media_file_delete(oss_media_file_t *file) {
     status = oss_delete_object(opts, &bucket, &key, &resp_headers);
     if (!aos_status_is_ok(status)) {
         aos_error_log("delete object failed. request_id:%s, code:%d, "
-                      "error_code:%s, error_message:%s",
+                      "error_code:%s, error_message:%s, try_cnt:%d",
                       status->req_id, status->code, status->error_code,
-                      status->error_msg);
+                      status->error_msg, try_cnt);
         aos_pool_destroy(pool);
         return -1;
     }
 
     aos_pool_destroy(pool);
     return 0;
+}
+
+int oss_media_file_delete(oss_media_file_t *file) {
+    int try_cnt = 1;
+    int ret = 0;
+    do {
+        if ((ret = oss_media_file_delete_internal(file, try_cnt)) != -1)
+            break;
+        
+        if (++try_cnt > oss_media_retry_cnt)
+            break;
+        usleep(oss_media_sleep_us);
+    } while (try_cnt < MAX_RETRY_CNT);
+
+    return ret;
 }
 
 int64_t oss_media_file_tell(oss_media_file_t *file) {
@@ -217,7 +258,7 @@ int64_t oss_media_file_seek(oss_media_file_t *file, int64_t offset) {
     return offset;
 }
 
-int64_t oss_media_file_read(oss_media_file_t *file, void *buf, int64_t nbyte) {
+static int64_t oss_media_file_read_internal(oss_media_file_t *file, void *buf, int64_t nbyte, int try_cnt) {
     aos_pool_t *pool = NULL;
     oss_request_options_t *opts = NULL;
     aos_string_t bucket;
@@ -265,9 +306,9 @@ int64_t oss_media_file_read(oss_media_file_t *file, void *buf, int64_t nbyte) {
 
     if (!aos_status_is_ok(status)) {
         aos_error_log("get object failed. request_id:%s, code:%d, "
-                      "error_code:%s, error_message:%s",
+                      "error_code:%s, error_message:%s, try_cnt:%d",
                       status->req_id, status->code, status->error_code,
-                      status->error_msg);
+                      status->error_msg, try_cnt);
         aos_pool_destroy(pool);
         return -1;
     }
@@ -285,7 +326,27 @@ int64_t oss_media_file_read(oss_media_file_t *file, void *buf, int64_t nbyte) {
     return len;
 }
 
-int64_t oss_media_file_write(oss_media_file_t *file, const void *buf, int64_t nbyte) {
+int64_t oss_media_file_read(oss_media_file_t *file, void *buf, int64_t nbyte) {
+    int try_cnt = 1;
+    int64_t ret = 0;
+    
+    if (!is_readable(file)) {
+      return -1;
+    }
+    
+    do {
+        if ((ret = oss_media_file_read_internal(file, buf, nbyte, try_cnt)) != -1)
+            break;
+        
+        if (++try_cnt > oss_media_retry_cnt)
+            break;
+        usleep(oss_media_sleep_us);
+    } while (try_cnt < MAX_RETRY_CNT);
+
+    return ret;
+}
+
+int64_t oss_media_file_write_internal(oss_media_file_t *file, const void *buf, int64_t nbyte, int try_cnt) {
     aos_pool_t *pool = NULL;
     oss_request_options_t *opts = NULL;
     aos_string_t bucket;
@@ -324,9 +385,9 @@ int64_t oss_media_file_write(oss_media_file_t *file, const void *buf, int64_t nb
 
         if (!aos_status_is_ok(status)) {
             aos_error_log("put object failed. request_id:%s, code:%d, "
-                          "error_code:%s, error_message:%s",
+                          "error_code:%s, error_message:%s, try_cnt:%d",
                           status->req_id, status->code, status->error_code,
-                          status->error_msg);
+                          status->error_msg, try_cnt);
             aos_pool_destroy(pool);
             return -1;
         }
@@ -339,9 +400,9 @@ int64_t oss_media_file_write(oss_media_file_t *file, const void *buf, int64_t nb
 
         if (!aos_status_is_ok(status)) {
             aos_error_log("append object failed. request_id:%s, code:%d, "
-                          "error_code:%s, error_message:%s",
+                          "error_code:%s, error_message:%s, try_cnt:%d",
                           status->req_id, status->code, status->error_code,
-                          status->error_msg);
+                          status->error_msg, try_cnt);
             aos_pool_destroy(pool);
             return -1;
         }
@@ -351,6 +412,22 @@ int64_t oss_media_file_write(oss_media_file_t *file, const void *buf, int64_t nb
 
     aos_pool_destroy(pool);
     return nbyte;
+}
+
+int64_t oss_media_file_write(oss_media_file_t *file, const void *buf, int64_t nbyte) {
+    int try_cnt = 1;
+    int64_t ret = 0;
+    
+    do {
+        if ((ret = oss_media_file_write_internal(file, buf, nbyte, try_cnt)) != -1)
+            break;
+        
+        if (++try_cnt > oss_media_retry_cnt)
+            break;
+        usleep(oss_media_sleep_us);
+    } while (try_cnt < MAX_RETRY_CNT);
+
+    return ret;
 }
 
 // 00 00 00 01 65 ==> Coded slice of an IDR picture
