@@ -399,12 +399,33 @@ int64_t oss_media_file_write_internal(oss_media_file_t *file, const void *buf, i
                      req_headers, resp_headers);
 
         if (!aos_status_is_ok(status)) {
-            aos_error_log("append object failed. request_id:%s, code:%d, "
-                          "error_code:%s, error_message:%s, try_cnt:%d",
-                          status->req_id, status->code, status->error_code,
-                          status->error_msg, try_cnt);
+            int ret = -1;
+            //if fail, always update length 
+            oss_media_file_stat_t stat;
+            memset(&stat, 0, sizeof(stat));
+            if (oss_media_file_stat_internal(file, &stat, 0) == 0) {
+                if (file->_stat.length + nbyte == stat.length) {
+                    ret = nbyte;
+                } 
+                aos_error_log("append object failed, and reset file length. client length:%ld, server length:%ld, append size:%ld", 
+                    file->_stat.length, stat.length, nbyte);
+                file->_stat.length = stat.length;
+            }
+
+            if (ret < 0) {
+                aos_error_log("append object failed. request_id:%s, code:%d, "
+                              "error_code:%s, error_message:%s, try_cnt:%d",
+                              status->req_id, status->code, status->error_code,
+                              status->error_msg, try_cnt);
+            } else {
+                aos_error_log("append object failed, but data has been appeded to file, ignore it. request_id:%s, code:%d, "
+                    "error_code:%s, error_message:%s, try_cnt:%d",
+                    status->req_id, status->code, status->error_code,
+                    status->error_msg, try_cnt);
+            }
+
             aos_pool_destroy(pool);
-            return -1;
+            return ret;
         }
         file->_stat.length = oss_get_content_length(apr_table_get(resp_headers, 
                         "x-oss-next-append-position"));

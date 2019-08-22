@@ -15,6 +15,8 @@ void test_client_setup(CuTest *tc) {
     apr_dir_make(TEST_DIR"/data/", APR_OS_DEFAULT, p);
 
     oss_media_set_retry_config(2, 2000000);
+
+    //aos_log_set_level(AOS_LOG_ERROR);
     
     aos_pool_destroy(p);
 }
@@ -561,6 +563,86 @@ void delete_file(oss_media_file_t *file) {
     oss_delete_object(options, &bucket, &object, &resp_headers);
 }
 
+void test_append_file_with_error_handle(CuTest *tc) {
+    int64_t write_size = 0;
+    int64_t oldLength;
+    oss_media_file_t *file = NULL;
+    char *content0 = NULL;
+    char *content1 = NULL;
+    char *content2 = NULL;
+    oss_media_file_stat_t stat;
+    int ret;
+    int64_t content_len;
+    char buff[128];
+
+    content0 = "0hello oss media file\n";
+    content1 = "1hello oss media file\n";
+    content2 = "2hello oss media file\n";
+    content_len = (int64_t)strlen(content0);
+
+    // open file
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file_append_error_handle.txt",
+        "a", auth_func);
+    CuAssertTrue(tc, NULL != file);
+
+    // write file
+    write_size = oss_media_file_write(file, content0, content_len);
+    CuAssertIntEquals(tc, content_len, write_size);
+    CuAssertIntEquals(tc, file->_stat.length, content_len);
+
+    // enter error handle, and ignore this write.
+    file->_stat.length -= write_size;
+    CuAssertIntEquals(tc, file->_stat.length, 0);
+    write_size = oss_media_file_write(file, content0, content_len);
+    CuAssertIntEquals(tc, content_len, write_size);
+    CuAssertIntEquals(tc, file->_stat.length, content_len);
+
+    ret = oss_media_file_stat(file, &stat);
+    CuAssertIntEquals(tc, 0, ret);
+    CuAssertIntEquals(tc, content_len, stat.length);
+
+    // write file
+    write_size = oss_media_file_write(file, content1, content_len);
+    CuAssertIntEquals(tc, content_len, write_size);
+    CuAssertIntEquals(tc, content_len * 2, file->_stat.length);
+
+    ret = oss_media_file_stat(file, &stat);
+    CuAssertIntEquals(tc, 0, ret);
+    CuAssertIntEquals(tc, content_len*2, stat.length);
+
+    // enter error handle, and write from correct offset.
+    file->_stat.length -= 1;
+    CuAssertIntEquals(tc, file->_stat.length, (content_len*2 - 1));
+    write_size = oss_media_file_write(file, content2, content_len);
+    CuAssertIntEquals(tc, content_len, write_size);
+    CuAssertIntEquals(tc, file->_stat.length, content_len*3);
+
+    ret = oss_media_file_stat(file, &stat);
+    CuAssertIntEquals(tc, 0, ret);
+
+    CuAssertStrEquals(tc, "Appendable", stat.type);
+    CuAssertIntEquals(tc, content_len * 3, stat.length);
+
+    // close
+    oss_media_file_close(file);
+
+    //read file
+    file = oss_media_file_open(TEST_BUCKET_NAME, "oss_media_file_append_error_handle.txt",
+        "r", auth_func);
+    CuAssertTrue(tc, NULL != file);
+    ret = oss_media_file_read(file, buff, 128);
+    CuAssertIntEquals(tc, content_len*3, ret);
+
+    CuAssertIntEquals(tc, strncmp(buff, content0, content_len), 0);
+    CuAssertIntEquals(tc, strncmp(buff + content_len, content1, content_len), 0);
+    CuAssertIntEquals(tc, strncmp(buff + content_len*2, content2, content_len), 0);
+
+    delete_file(file);
+    oss_media_file_close(file);
+
+    printf("%s ok\n", __FUNCTION__);
+}
+
 CuSuite *test_client()
 {
     CuSuite* suite = CuSuiteNew();   
@@ -589,6 +671,9 @@ CuSuite *test_client()
 
     // open test
     SUITE_ADD_TEST(suite, test_open_file_failed_with_wrong_flag);
+
+    // write with error handle
+    SUITE_ADD_TEST(suite, test_append_file_with_error_handle);
 
     SUITE_ADD_TEST(suite, test_client_teardown); 
     
