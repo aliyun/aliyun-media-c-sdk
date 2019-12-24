@@ -298,7 +298,9 @@ static int oss_media_write_stream_frame(oss_media_hls_frame_t *frame,
     }
 
     float duration = (frame->pts - stream->current_file_begin_pts) / 90000.0;
-    if (oss_media_need_flush(duration, stream->options->hls_time, frame))
+
+    if (frame->key
+        && oss_media_need_flush(duration, stream->options->hls_time, frame))
     {
         if(0 != oss_media_hls_stream_flush(duration, stream)) {
             aos_error_log("flush stream data failed.");
@@ -397,6 +399,7 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
                     frame_end_found = 1;
                 } else {
                     frame_start_found = 1;
+                    frame->key = nal_type == ft_idr;
                 }
             }
 
@@ -404,7 +407,6 @@ static int oss_media_get_video_frame(uint8_t *buf, uint64_t len,
                 frame_end_found = 0;
                 cur_pos = i;
                 frame->frame_type = buf[last_pos+4] & 0x1F;
-                frame->key = frame->frame_type == ft_idr;
             }
         }
 
